@@ -45,3 +45,12 @@ add_executable("${KafkaConsoleProducer}" "KafkaConsoleProducer.cc")
 target_link_libraries("${KafkaConsoleProducer}" modern-cpp-kafka-api boost_program_options)
 
 install(TARGETS "${KafkaConsoleProducer}" DESTINATION tools)
+
+# Target: kafka-throughput-monitor
+set(KafkaThroughputMonitor kafka-throuthput-monitor)
+
+add_executable("${KafkaThroughputMonitor}" "KafkaThroughputMonitor.cc")
+target_link_libraries("${KafkaThroughputMonitor}" modern-cpp-kafka-api boost_program_options)
+
+install(TARGETS "${KafkaThroughputMonitor}" DESTINATION tools)
+
