@@ -165,7 +165,7 @@ typedef SSIZE_T ssize_t;
  * @remark This value should only be used during compile time,
  *         for runtime checks of version use rd_kafka_version()
  */
-#define RD_KAFKA_VERSION 0x010902ff
+#define RD_KAFKA_VERSION 0x010909ff
 
 /**
  * @brief Returns the librdkafka version as integer.
@@ -8367,6 +8367,11 @@ rd_kafka_error_t *rd_kafka_commit_transaction(rd_kafka_t *rk, int timeout_ms);
 RD_EXPORT
 rd_kafka_error_t *rd_kafka_abort_transaction(rd_kafka_t *rk, int timeout_ms);
 
+int rd_kafka_get_brokers_number(rd_kafka_t *rk);
+/* 0 on success */
+int rd_kafka_get_brokers_ids(rd_kafka_t *rk, int *capacity, int * ids);
+/* 0 on success */
+int rd_kafka_broker_state_by_id(rd_kafka_t *rk, int32_t node_id, const char** state_name, uint64_t* ts_state);
 
 /**@}*/
 

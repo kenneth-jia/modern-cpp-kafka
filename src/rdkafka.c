@@ -4172,7 +4172,88 @@ void rd_kafka_dump(FILE *fp, rd_kafka_t *rk) {
                 rd_kafka_dump0(fp, rk, 1 /*locks*/);
 }
 
+/////////////   BEGIN  /////////////
+///
+/*
+struct broker_state {
+    char* name;
+    int32_t node_id;
+    float us;
+};
 
+void rd_kafka_get_broker_state(rd_kafka_broker_t *rkb, char **name, int32_t *nodeid, float *us) {
+        rd_kafka_broker_lock(rkb);
+        // rkb->rkb_name,
+        // rkb->rkb_nodeid
+        // rd_kafka_broker_state_names[rkb->rkb_state]
+        // (float)(rd_clock() - rkb->rkb_ts_state) / 1000000.0f
+
+
+        rd_kafka_broker_unlock(rkb);
+
+
+}
+
+
+void rd_kafka_get_brokers_state(int num, ) {
+}
+
+*/
+int rd_kafka_get_brokers_number(rd_kafka_t *rk) {
+        rd_kafka_broker_t * rkb;
+
+        int ret = 0;
+        TAILQ_FOREACH(rkb, &rk->rk_brokers, rkb_link) {
+            fprintf(stdout, "%s, rkb_nodeid: %d, rkb_name: %s\n", __FUNCTION__, rkb->rkb_nodeid, rkb->rkb_name);
+            ++ret;
+        }
+        return ret;
+}
+
+int rd_kafka_get_brokers_ids(rd_kafka_t *rk, int *capacity, int * ids) {
+        rd_kafka_broker_t * rkb;
+        int count = 0;
+        TAILQ_FOREACH(rkb, &rk->rk_brokers, rkb_link) {
+            if (count < *capacity) {
+                    ids[count++] = rkb->rkb_nodeid;
+                    // rkb->rkb_name
+            }
+
+            ++count;
+        }
+
+        if (count <= *capacity) {
+            return 0;
+        } else {
+            *capacity = count;
+            return 1;
+        }
+}
+
+/*
+struct rd_kafka_broker_info {
+    struct rd_kafka_metadata_broker broker;
+    char *state;
+
+};
+*/
+
+
+int rd_kafka_broker_state_by_id(rd_kafka_t *rk, int32_t node_id, const char** state_name, uint64_t* ts_state) {
+    rd_kafka_broker_t* rkb;
+
+    rkb = rd_kafka_broker_find_by_nodeid(rk, node_id);
+    if (!rkb) return 1;
+
+    *state_name = rd_kafka_broker_state_names[rkb->rkb_state];
+    *ts_state = rkb->rkb_ts_state;
+    return 0;
+}
+
+
+
+
+/////////////   END   /////////////
 
 const char *rd_kafka_name(const rd_kafka_t *rk) {
         return rk->rk_name;
