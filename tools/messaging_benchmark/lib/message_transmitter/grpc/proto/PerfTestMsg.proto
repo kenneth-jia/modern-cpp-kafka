@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.grpc.perftest.msg";
+option java_outer_classname = "MsgForPerfTest";
+option objc_class_prefix = "HLW";
+
+package PerfTestMsg;
+
+// The greeting service definition.
+service PerfTest {
+  // Sends a greeting
+  rpc SendReq (PerfTestRequest) returns (PerfTestReply) {}
+}
+
+// The request message containing the user's name.
+message PerfTestRequest {
+  bytes payload = 1;
+}
+
+// The response message containing the greetings
+message PerfTestReply {
+   int32 ack = 1;
+}
