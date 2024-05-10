@@ -1,0 +1,74 @@
+global-environments:
+    ADDITIONAL_BIN_PATH: /../binary-path
+    ROOT_OUTPUT_PATH: /tmp/cluster
+
+
+application-templates:
+    zookeeper:
+        config-files:
+            zookeeper.properties: zookeeper.properties.template
+
+        env:
+            DATA_DIR: $ROOT_OUTPUT_PATH/zookeeper$ID/data
+            LOG_DIR: $ROOT_OUTPUT_PATH/zookeeper$ID/logs
+            SERVER1: $HOSTNAME:12888:13888
+            SERVER2: $HOSTNAME:14888:15888
+            SERVER3: $HOSTNAME:16888:17888
+            ZOOKEEPER_SASL_CLIENT_USERNAME: ${USER}
+
+        app-start-cmd:
+            mkdir -p $DATA_DIR && echo $ID > $DATA_DIR/myid && zookeeper-server-start zookeeper.properties
+
+    kafka:
+        config-files:
+            server.properties: server_mtls.properties.template
+
+        env:
+            DATA_DIR: $ROOT_OUTPUT_PATH/kafka$ID/data
+            LOG_DIR: $ROOT_OUTPUT_PATH/kafka$ID/logs     
+
+            ZOOKEEPER_CONNECT: $HOSTNAME:2181,$HOSTNAME:2182,$HOSTNAME:2183
+            ZOOKEEPER_SASL_CLIENT_USERNAME: $USER
+            SASL_KERBEROS_SERVICE_NAME: $USER
+
+        app-start-cmd:
+            sleep $START_DELAY_SECONDS && kafka-server-start server.properties
+
+applications:
+  - name: zookeeper1
+    run-on-host: localhost
+    template: zookeeper
+    env:
+        ID: 1
+        CLIENT_PORT: 2181
+        
+  - name: zookeeper2
+    run-on-host: localhost
+    template: zookeeper
+    env:
+        ID: 2
+        CLIENT_PORT: 2182
+
+  - name: zookeeper3
+    run-on-host: localhost
+    template: zookeeper
+    env:
+        ID: 3
+        CLIENT_PORT: 2183
+
+  - name: kafka1
+    run-on-host: localhost
+    template: kafka
+    env:
+        ID: 1
+        KERBEROS_LISTERNER_PORT: 9092
+        SUPER_USERS: "User:admin;User:super_user"
+        START_DELAY_SECONDS: 30
+
+
+        
+
+
+
+
+        

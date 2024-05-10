@@ -1,0 +1,78 @@
+############################# Server Basics #############################
+broker.id=${ID}
+
+
+############################# Zookeeper #############################
+zookeeper.connect=${ZOOKEEPER_CONNECT}
+zookeeper.connection.timeout.ms=18000
+zookeeper.sasl.client.username=${ZOOKEEPER_SASL_CLIENT_USERNAME}
+zookeeper.set.acl=true
+
+
+############################# Socket Server Settings #############################
+listeners=INTERNAL://:${INTERNAL_LISTERNER_PORT},EXTERNAL://:${EXTERNAL_LISTERNER_PORT}
+advertised.listeners=INTERNAL://${HOSTNAME}:${INTERNAL_LISTERNER_PORT},EXTERNAL://${HOSTNAME}:${EXTERNAL_LISTERNER_PORT}
+listener.security.protocol.map=PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL,INTERNAL:SASL_PLAINTEXT,EXTERNAL:SSL
+
+inter.broker.listener.name=INTERNAL
+
+
+############################# mTLS Settings #############################
+listener.name.external.ssl.protocol = TLS
+listener.name.external.ssl.enabled.protocols=TLSv1.2,TLSv1.1,TLSv1
+listener.name.external.ssl.keystore.type = JKS
+listener.name.external.ssl.keystore.location = ${SSL_KEYSTORE_LOCATION}
+listener.name.external.ssl.keystore.password = ${SSL_KEYSTORE_PASSWORD}
+listener.name.external.ssl.key.password =
+listener.name.external.ssl.truststore.type = JKS
+listener.name.external.ssl.truststore.location = ${SSL_TRUSTSTORE_LOCATION}
+listener.name.external.ssl.truststore.password = ${SSL_TRUSTSTORE_PASSWORD}
+listener.name.external.ssl.client.auth = required
+listener.name.external.ssl.endpoint.identification.algorithm=
+ssl.endpoint.identification.algorithm=
+
+##SSL Password encryption setting
+#password.encoder.secret=kafkasecret
+#password.encoder.iterations=8192
+
+#listener.name.external.ssl.principal.mapping.rules=RULE:^.*CN=(.*?),OU=(.*?),O=(.*?),L=(.*?),ST=(.*?),C=(.*?)$/$1/L,DEFAULT
+
+
+############################# Authorization  #############################
+super.users=${SUPER_USERS}
+
+
+############################# Broker Misc Settings  #############################
+num.network.threads=12
+num.io.threads=24
+num.recovery.threads.per.data.dir=20
+socket.send.buffer.bytes=102400
+uocket.receive.buffer.bytes=102400
+socket.request.max.bytes=104857600
+
+
+############################# Log Basics #############################
+log.dirs=${DATA_DIR}
+log.retention.hours=168
+log.segment.bytes=1073741824
+log.retention.check.interval.ms=300000
+
+
+############################# Topic Defaults #############################
+num.partitions=1
+
+
+############################# Internal Topic Settings  #############################
+offsets.topic.replication.factor=1
+transaction.state.log.replication.factor=1
+transaction.state.log.min.isr=1
+
+
+############################# Group Coordinator Settings #############################
+group.initial.rebalance.delay.ms=3000
+
+
+############################# Confluent Data Balancer Settings  #############################
+confluent.balancer.enable=true
+# The default value is 3.
+confluent.balancer.topic.replication.factor=1

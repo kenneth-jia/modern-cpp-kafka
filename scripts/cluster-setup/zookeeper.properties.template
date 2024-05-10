@@ -1,0 +1,32 @@
+# the directory where the snapshot is stored.
+#dataDir=/d/d1/kafka-cn-messaging-gateway/qa/cn-messaging-gateway/zk/data
+dataDir=${DATA_DIR}
+# the port at which the clients will connect
+clientPort=${CLIENT_PORT}
+# disable the per-ip limit on the number of connections since this is a non-production config
+maxClientCnxns=6
+# Disable the adminserver by default to avoid port conflicts.
+# Set the port to something non-conflicting if choosing to enable this
+admin.enableServer=false
+# admin.serverPort=8080
+
+audit.enable=true
+
+# SASL/Kerberos config
+authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+requireClientAuthScheme=sasl
+jaasLoginRenew=3600000
+zookeeper.sasl.client.username=${ZOOKEEPER_SASL_CLIENT_USERNAME}
+kerberos.removeHostFromPrincipal=true
+kerberos.removeRealmFromPrincipal=true
+
+tickTime=2000
+initLimit=5
+syncLimit=3
+
+server.1=${SERVER1}
+server.2=${SERVER2}
+server.3=${SERVER3}
+
+autopurge.snapRetainCount=10
+autopurge.purgeInterval=24
