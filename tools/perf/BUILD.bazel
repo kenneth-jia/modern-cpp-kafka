@@ -1,0 +1,20 @@
+cc_binary(
+    name = "kafka-end-to-end-latency-test",
+
+    srcs = ["KafkaEndToEndLatencyTest.cc"],
+
+    linkopts = ["-lboost_program_options", "-lrdkafka"],
+
+    deps = ["//:modern-cpp-kafka-api"],
+)
+
+cc_binary(
+    name = "kafka-producer-perf-test",
+
+    srcs = ["KafkaProducerPerfTest.cc"],
+
+    linkopts = ["-lboost_program_options", "-lrdkafka"],
+
+    deps = ["//:modern-cpp-kafka-api"],
+)
+

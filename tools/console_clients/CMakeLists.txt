@@ -1,4 +1,4 @@
-project("kafka-tools")
+project("kafka-console-clients")
 
 
 #---------------------------
