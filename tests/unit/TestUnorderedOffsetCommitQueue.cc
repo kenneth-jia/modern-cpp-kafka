@@ -134,7 +134,7 @@ std::int64_t checkTimeMsConsumedToSortOffsets(std::int64_t testNum, std::int64_t
     std::vector<kafka::Offset> waitSequence(testNum);
     for (std::int64_t i = 0 ; i < testNum; ++i)
     {
-        waitSequence[i] = static_cast<kafka::Offset>(i);
+        waitSequence.at(i) = static_cast<kafka::Offset>(i);
     }
 
     std::vector<kafka::Offset> ackSequence = waitSequence;
@@ -155,12 +155,12 @@ std::int64_t checkTimeMsConsumedToSortOffsets(std::int64_t testNum, std::int64_t
     {
         for (std::int64_t i = 0; i < step && indexWait < testNum; ++i)
         {
-            queue.waitOffset(waitSequence[indexWait++]);
+            queue.waitOffset(waitSequence.at(indexWait++));
         }
 
         for (std::int64_t i = 0; i < step && indexAck < testNum; ++i)
         {
-            queue.ackOffset(ackSequence[indexAck++]);
+            queue.ackOffset(ackSequence.at(indexAck++));
         }
     }
 

@@ -339,6 +339,7 @@ TEST(Transaction, ContinueTheTransaction2)
 
     constexpr std::size_t NUM_MESSAGES = 100;
     std::vector<std::string>  messagesToSend;
+    messagesToSend.reserve(NUM_MESSAGES);
     for(std::size_t i = 0; i < NUM_MESSAGES; ++i)
     {
         messagesToSend.emplace_back(std::to_string(i));
@@ -362,7 +363,7 @@ TEST(Transaction, ContinueTheTransaction2)
         std::atomic<std::size_t> delivered(0);
         for (std::size_t i = 0; i < NUM_MESSAGES / 2; ++i)
         {
-            const auto& msg = messagesToSend[i];
+            const auto& msg = messagesToSend.at(i);
             auto record = ProducerRecord(topic,
                                          kafka::NullKey,
                                          kafka::Value(msg.c_str(), msg.size()));
@@ -393,7 +394,7 @@ TEST(Transaction, ContinueTheTransaction2)
 
         for (std::size_t i = NUM_MESSAGES / 2; i < NUM_MESSAGES; ++i)
         {
-            const auto& msg = messagesToSend[i];
+            const auto& msg = messagesToSend.at(i);
             auto record = ProducerRecord(topic,
                                          kafka::NullKey,
                                          kafka::Value(msg.c_str(), msg.size()));
@@ -436,7 +437,7 @@ TEST(Transaction, ContinueTheTransaction2)
         std::atomic<std::size_t> delivered(0);
         for (std::size_t i = NUM_MESSAGES / 2; i < NUM_MESSAGES; ++i)
         {
-            const auto& msg = messagesToSend[i];
+            const auto& msg = messagesToSend.at(i);
             auto record = ProducerRecord(topic,
                                          kafka::NullKey,
                                          kafka::Value(msg.c_str(), msg.size()));
@@ -473,7 +474,7 @@ TEST(Transaction, ContinueTheTransaction2)
         auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
         for (std::size_t i = 0; i < records.size(); ++i)
         {
-            EXPECT_EQ(std::to_string(i), records[i].value().toString());
+            EXPECT_EQ(std::to_string(i), records.at(i).value().toString());
         }
 
         EXPECT_EQ(NUM_MESSAGES, records.size());
@@ -489,7 +490,7 @@ TEST(Transaction, ContinueTheTransaction2)
         auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
 
         // Those uncommitted messages would be got as well
-        EXPECT_EQ(NUM_MESSAGES + NUM_MESSAGES / 2, records.size());
+        EXPECT_EQ(NUM_MESSAGES + (NUM_MESSAGES / 2), records.size());
     }
 }
 

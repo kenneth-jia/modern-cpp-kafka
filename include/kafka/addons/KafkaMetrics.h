@@ -2,7 +2,6 @@
 
 #include <kafka/Project.h>
 
-// https://github.com/Tencent/rapidjson/releases/tag/v1.1.0
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
@@ -71,21 +70,13 @@ private:
     template<typename ValueType>
     static ValueType getValue(rapidjson::Value::ConstMemberIterator iter);
 
-#if COMPILER_SUPPORTS_CPP_17
-    std::string         _decodeBuf;
-#else
-    std::vector<char>   _decodeBuf;
-#endif
+std::string         _decodeBuf;
     rapidjson::Document _jsonDoc;
 };
 
 inline
 KafkaMetrics::KafkaMetrics(std::string jsonMetrics)
-#if COMPILER_SUPPORTS_CPP_17
     : _decodeBuf(std::move(jsonMetrics))
-#else
-    : _decodeBuf(jsonMetrics.cbegin(), jsonMetrics.cend() + 1)
-#endif
 {
     if (_jsonDoc.ParseInsitu(_decodeBuf.data()).HasParseError())
     {
@@ -180,8 +171,8 @@ KafkaMetrics::toString(const KafkaMetrics::KeysType& keys)
 {
     std::string ret;
 
-    std::for_each(keys.cbegin(), keys.cend(),
-                  [&ret](const auto& key){ ret.append((ret.empty() ? std::string() : std::string(", ")) + "\"" + key + "\""); });
+    std::ranges::for_each(keys,
+                          [&ret](const auto& key){ ret.append((ret.empty() ? std::string() : std::string(", ")) + "\"" + key + "\""); });
 
     return ret;
 }
@@ -193,14 +184,14 @@ KafkaMetrics::toString(const KafkaMetrics::ResultsType<ValueType>& results)
     std::ostringstream oss;
     bool isTheFirstOne = true;
 
-    std::for_each(results.cbegin(), results.cend(),
-                  [&oss, &isTheFirstOne](const auto& result) {
-                     const auto keysString  = toString(result.first);
+    std::ranges::for_each(results,
+                          [&oss, &isTheFirstOne](const auto& result) {
+                             const auto keysString  = toString(result.first);
 
-                     oss << (isTheFirstOne ? (isTheFirstOne = false, "") : ", ")
-                         << (keysString.empty() ? "" : (std::string("[") + keysString + "]:"));
-                     oss << (std::is_same<ValueType, std::string>::value ? "\"" : "")  << result.second << (std::is_same<ValueType, std::string>::value ? "\"" : "");
-                  });
+                             oss << (isTheFirstOne ? (isTheFirstOne = false, "") : ", ")
+                                 << (keysString.empty() ? "" : (std::string("[") + keysString + "]:"));
+                             oss << (std::is_same<ValueType, std::string>::value ? "\"" : "")  << result.second << (std::is_same<ValueType, std::string>::value ? "\"" : "");
+                          });
 
     return oss.str();
 }

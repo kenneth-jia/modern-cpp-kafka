@@ -23,10 +23,10 @@ include(CMakePushCheckState)
 
 
 #---------------------------
-# C++17 (by default)
+# C++23 (by default)
 #---------------------------
 if (NOT CMAKE_CXX_STANDARD)
-    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD 23)
 endif ()
 set(CMAKE_CXX_STANDARD_REQUIRED False)
 
@@ -99,21 +99,6 @@ if (NOT BUILD_OPTION_DOC_ONLY)
         message(STATUS "sasl2 library: ${SASL_LIBRARY}")
     endif ()
 
-
-    #---------------------------
-    # boost headers (for C++14 support)
-    #---------------------------
-    if (CMAKE_CXX_STANDARD EQUAL 14)
-        if (DEFINED ENV{BOOST_ROOT})
-            set(Boost_INCLUDE_DIRS $ENV{BOOST_ROOT}/include)
-        else ()
-            find_package(Boost)
-            if (NOT Boost_FOUND)
-                message(FATAL_ERROR "Cound not find library: boost!")
-            endif ()
-        endif ()
-        include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-    endif ()
 
 endif ()
 

@@ -27,7 +27,7 @@ TEST(KafkaConsumer, BasicPoll)
     interceptors.onBrokerStateChange([&brokersState](int id, const std::string& proto, const std::string& name, int port, const std::string& state) {
                                         const std::string brokerDescription = (std::to_string(id) + " - " + proto + "://" + name + ":" + std::to_string(port));
                                         std::cout << "Broker[" << brokerDescription << "] ==> " << state << std::endl;
-                                        if (!name.empty() && name != "GroupCoordinator")
+                                        if (!name.empty() && name != "GroupCoordinator" && id != -1)
                                         {
                                             brokersState[name + ":" + std::to_string(port)] = state;
                                         }
@@ -95,10 +95,10 @@ TEST(KafkaConsumer, BasicPoll)
             EXPECT_EQ(topic, record.topic());
             EXPECT_EQ(partition, record.partition());
             EXPECT_EQ(0, record.headers().size());
-            EXPECT_EQ(std::get<1>(messages[rcvMsgCount]).size(), record.key().size());
-            EXPECT_EQ(0, std::memcmp(std::get<1>(messages[rcvMsgCount]).c_str(), record.key().data(), record.key().size()));
-            EXPECT_EQ(std::get<2>(messages[rcvMsgCount]).size(), record.value().size());
-            EXPECT_EQ(0, std::memcmp(std::get<2>(messages[rcvMsgCount]).c_str(), record.value().data(), record.value().size()));
+            EXPECT_EQ(std::get<1>(messages.at(rcvMsgCount)).size(), record.key().size());
+            EXPECT_EQ(0, std::memcmp(std::get<1>(messages.at(rcvMsgCount)).c_str(), record.key().data(), record.key().size()));
+            EXPECT_EQ(std::get<2>(messages.at(rcvMsgCount)).size(), record.value().size());
+            EXPECT_EQ(0, std::memcmp(std::get<2>(messages.at(rcvMsgCount)).c_str(), record.value().data(), record.value().size()));
 
             ++rcvMsgCount;
         }
@@ -172,16 +172,16 @@ TEST(KafkaConsumer, PollWithHeaders)
 
         EXPECT_EQ(topic, record.topic());
         EXPECT_EQ(partition, record.partition());
-        EXPECT_EQ(std::get<1>(messages[rcvMsgCount]), record.key().toString());
-        EXPECT_EQ(std::get<2>(messages[rcvMsgCount]), record.value().toString());
+        EXPECT_EQ(std::get<1>(messages.at(rcvMsgCount)), record.key().toString());
+        EXPECT_EQ(std::get<2>(messages.at(rcvMsgCount)), record.value().toString());
 
         kafka::Headers headersInRecord = record.headers();
-        const kafka::Headers& expectedHeader = std::get<0>(messages[rcvMsgCount]);
+        const kafka::Headers& expectedHeader = std::get<0>(messages.at(rcvMsgCount));
         ASSERT_EQ(expectedHeader.size(), headersInRecord.size());
         for (std::size_t i = 0; i < expectedHeader.size(); ++i)
         {
-            EXPECT_EQ(expectedHeader[i].key, headersInRecord[i].key);
-            EXPECT_EQ(expectedHeader[i].value.toString(), headersInRecord[i].value.toString());
+            EXPECT_EQ(expectedHeader.at(i).key, headersInRecord.at(i).key);
+            EXPECT_EQ(expectedHeader.at(i).value.toString(), headersInRecord.at(i).value.toString());
         }
 
         // Here only check the first message, which has the headers
@@ -274,10 +274,10 @@ TEST(KafkaConsumer, SeekAndPoll)
         EXPECT_EQ(topic, record.topic());
         EXPECT_EQ(partition, record.partition());
         EXPECT_EQ(0, record.headers().size());
-        EXPECT_EQ(std::get<1>(messages[rcvMsgCount]).size(), record.key().size());
-        EXPECT_EQ(0, std::memcmp(std::get<1>(messages[rcvMsgCount]).c_str(), record.key().data(), record.key().size()));
-        EXPECT_EQ(std::get<2>(messages[rcvMsgCount]).size(), record.value().size());
-        EXPECT_EQ(0, std::memcmp(std::get<2>(messages[rcvMsgCount]).c_str(), record.value().data(), record.value().size()));
+        EXPECT_EQ(std::get<1>(messages.at(rcvMsgCount)).size(), record.key().size());
+        EXPECT_EQ(0, std::memcmp(std::get<1>(messages.at(rcvMsgCount)).c_str(), record.key().data(), record.key().size()));
+        EXPECT_EQ(std::get<2>(messages.at(rcvMsgCount)).size(), record.value().size());
+        EXPECT_EQ(0, std::memcmp(std::get<2>(messages.at(rcvMsgCount)).c_str(), record.value().data(), record.value().size()));
 
         ++rcvMsgCount;
     }
@@ -311,10 +311,10 @@ TEST(KafkaConsumer, SeekAndPoll)
         EXPECT_EQ(topic, record.topic());
         EXPECT_EQ(partition, record.partition());
         EXPECT_EQ(0, record.headers().size());
-        EXPECT_EQ(std::get<1>(messages[rcvMsgCount]).size(), record.key().size());
-        EXPECT_EQ(0, std::memcmp(std::get<1>(messages[rcvMsgCount]).c_str(), record.key().data(), record.key().size()));
-        EXPECT_EQ(std::get<2>(messages[rcvMsgCount]).size(), record.value().size());
-        EXPECT_EQ(0, std::memcmp(std::get<2>(messages[rcvMsgCount]).c_str(), record.value().data(), record.value().size()));
+        EXPECT_EQ(std::get<1>(messages.at(rcvMsgCount)).size(), record.key().size());
+        EXPECT_EQ(0, std::memcmp(std::get<1>(messages.at(rcvMsgCount)).c_str(), record.key().data(), record.key().size()));
+        EXPECT_EQ(std::get<2>(messages.at(rcvMsgCount)).size(), record.value().size());
+        EXPECT_EQ(0, std::memcmp(std::get<2>(messages.at(rcvMsgCount)).c_str(), record.value().data(), record.value().size()));
 
         ++rcvMsgCount;
     }
@@ -415,8 +415,8 @@ TEST(KafkaConsumer, OffsetCommitCallback)
         if (records.empty()) continue;
 
         EXPECT_EQ(1, records.size());
-        auto expected = std::make_tuple(records[0].topic(), records[0].partition(), records[0].offset() + 1);
-        consumer.commitAsync(records[0],
+        auto expected = std::make_tuple(records.at(0).topic(), records.at(0).partition(), records.at(0).offset() + 1);
+        consumer.commitAsync(records.at(0),
                              [expected, &commitCbCount](const kafka::TopicPartitionOffsets& tpos, const kafka::Error& error) {
                                  std::cout << "[" << kafka::utility::getCurrentTime() << "] offset commit callback for offset[" << kafka::toString(tpos) << "], result[" << error.message()<< "]" << std::endl;
                                  EXPECT_EQ(1, tpos.size());
@@ -480,8 +480,8 @@ TEST(KafkaConsumer, OffsetCommitCallbackTriggeredBeforeClose)
             if (records.empty()) continue;
 
             EXPECT_EQ(1, records.size());
-            auto expected = std::make_tuple(records[0].topic(), records[0].partition(), records[0].offset() + 1);
-            consumer.commitAsync(records[0],
+            auto expected = std::make_tuple(records.at(0).topic(), records.at(0).partition(), records.at(0).offset() + 1);
+            consumer.commitAsync(records.at(0),
                                  [expected, &commitCbCount](const kafka::TopicPartitionOffsets& tpos, const kafka::Error& error) {
                                      std::cout << "[" << kafka::utility::getCurrentTime() << "] offset commit callback for offset[" << kafka::toString(tpos) << "], result[" << error.message()<< "]" << std::endl;
                                      EXPECT_EQ(1, tpos.size());
@@ -542,8 +542,8 @@ TEST(KafkaConsumer, OffsetCommitCallback_ManuallyPollEvents)
         if (records.empty()) continue;
 
         EXPECT_EQ(1, records.size());
-        auto expected = std::make_tuple(records[0].topic(), records[0].partition(), records[0].offset() + 1);
-        consumer.commitAsync(records[0],
+        auto expected = std::make_tuple(records.at(0).topic(), records.at(0).partition(), records.at(0).offset() + 1);
+        consumer.commitAsync(records.at(0),
                              [expected, &commitCbCount](const kafka::TopicPartitionOffsets& tpos, const kafka::Error& error) {
                                  std::cout << "[" << kafka::utility::getCurrentTime() << "] offset commit callback for offset[" << kafka::toString(tpos) << "], result[" << error.message()<< "]" << std::endl;
                                  EXPECT_EQ(1, tpos.size());
@@ -583,8 +583,8 @@ TEST(KafkaConsumer, ManualOffsetCommitAndPosition)
         {kafka::Headers{}, "key4", "value4"},
     };
 
-    const auto getMsgKey   = [&messages](std::size_t i) { return std::get<1>(messages[i]); };
-    const auto getMsgValue = [&messages](std::size_t i) { return std::get<2>(messages[i]); };
+    const auto getMsgKey   = [&messages](std::size_t i) { return std::get<1>(messages.at(i)); };
+    const auto getMsgValue = [&messages](std::size_t i) { return std::get<2>(messages.at(i)); };
 
     // Send the messages
     KafkaTestUtility::ProduceMessages(topic, partition, messages);
@@ -623,7 +623,7 @@ TEST(KafkaConsumer, ManualOffsetCommitAndPosition)
         std::atomic<std::size_t> commitCbCount = {0};
         {
             auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
-            std::for_each(records.cbegin(), records.cend(), [](const auto& record) { std::cout << record.toString() << std::endl; });
+            std::ranges::for_each(records, [](const auto& record) { std::cout << record.toString() << std::endl; });
             EXPECT_EQ(messages.size() - startCount, records.size());
 
             for (auto& record: records)
@@ -676,7 +676,7 @@ TEST(KafkaConsumer, ManualOffsetCommitAndPosition)
         std::size_t rcvMsgCount = 0;
         {
             auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
-            std::for_each(records.cbegin(), records.cend(), [](const auto& record) { std::cout << record.toString() << std::endl; });
+            std::ranges::for_each(records, [](const auto& record) { std::cout << record.toString() << std::endl; });
             EXPECT_EQ(messages.size() - startCount, records.size());
 
             for (auto& record: records)
@@ -722,7 +722,7 @@ TEST(KafkaConsumer, ManualOffsetCommitAndPosition)
         std::size_t rcvMsgCount = 0;
         {
             auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
-            std::for_each(records.cbegin(), records.cend(), [](const auto& record) { std::cout << record.toString() << std::endl; });
+            std::ranges::for_each(records, [](const auto& record) { std::cout << record.toString() << std::endl; });
             EXPECT_EQ(messages.size() - startCount, records.size());
 
             for (auto& record: records)
@@ -771,7 +771,7 @@ TEST(KafkaConsumer, ManualOffsetCommitAndPosition)
         std::size_t rcvMsgCount = 0;
         {
             auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
-            std::for_each(records.cbegin(), records.cend(), [](const auto& record) { std::cout << record.toString() << std::endl; });
+            std::ranges::for_each(records, [](const auto& record) { std::cout << record.toString() << std::endl; });
             EXPECT_EQ(messages.size() - startCount, records.size());
 
             for (auto& record: records)
@@ -893,8 +893,8 @@ TEST(KafkaConsumer, AutoOffsetCommitAndPosition)
         {kafka::Headers{}, "key4", "value4"},
     };
 
-    const auto getMsgKey   = [&messages](std::size_t i) { return std::get<1>(messages[i]); };
-    const auto getMsgValue = [&messages](std::size_t i) { return std::get<2>(messages[i]); };
+    const auto getMsgKey   = [&messages](std::size_t i) { return std::get<1>(messages.at(i)); };
+    const auto getMsgValue = [&messages](std::size_t i) { return std::get<2>(messages.at(i)); };
 
     // Send the messages
     KafkaTestUtility::ProduceMessages(topic, partition, messages);
@@ -935,15 +935,15 @@ TEST(KafkaConsumer, AutoOffsetCommitAndPosition)
             auto polled = consumer.poll(KafkaTestUtility::POLL_INTERVAL);
             if (polled.empty()) continue;
 
-            EXPECT_TRUE(std::none_of(polled.cbegin(), polled.cend(), [](const auto& record) { return record.error(); }));
-            std::for_each(polled.cbegin(), polled.cend(), [](const auto& record) { std::cout << record.toString() << std::endl; });
+            EXPECT_TRUE(std::ranges::none_of(polled, [](const auto& record) { return static_cast<bool>(record.error()); }));
+            std::ranges::for_each(polled, [](const auto& record) { std::cout << record.toString() << std::endl; });
             // Due to "max.poll.records=1" property, one message fetched at most
             EXPECT_EQ(1, polled.size());
 
             EXPECT_TRUE(rcvMsgCount < messages.size());
             ++rcvMsgCount;
 
-            const auto& record = polled[0];
+            const auto& record = polled.at(0);
 
             // Check the position() , -- should return the offset of the next message, which could be fetched
             EXPECT_EQ(record.offset() + 1, consumer.position({record.topic(), record.partition()}));
@@ -974,7 +974,7 @@ TEST(KafkaConsumer, AutoOffsetCommitAndPosition)
         consumer.subscribe({topic});
 
         auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
-        std::for_each(records.cbegin(), records.cend(), [](const auto& record) { std::cout << record.toString() << std::endl; });
+        std::ranges::for_each(records, [](const auto& record) { std::cout << record.toString() << std::endl; });
         ASSERT_EQ(messages.size(), maxRecordsPolledAtFirst + records.size());
 
         // Check all these records polled
@@ -1070,9 +1070,9 @@ TEST(KafkaConsumer, RebalancePartitionsAssign)
     // Partitions assignment would be triggered 3 times
     ASSERT_EQ(3, partitionsAssigned.size());
     // The 2nd partitions assignment would take part of these partitions (the other part would be assigned to the other consumer)
-    EXPECT_TRUE(partitionsAssigned[1].size() < partitionsAssigned[0].size());
+    EXPECT_TRUE(partitionsAssigned.at(1).size() < partitionsAssigned.at(0).size());
     // While the other consumer is closed, it would take all partitions again
-    EXPECT_EQ(partitionsAssigned[0], partitionsAssigned[2]);
+    EXPECT_EQ(partitionsAssigned.at(0), partitionsAssigned.at(2));
 
     // Close the consumer
     consumer.close();
@@ -1186,7 +1186,7 @@ TEST(KafkaConsumer, TopicSubscription)
     std::cout << "[" << kafka::utility::getCurrentTime() << "] " << consumer.name() << " assignment[" << kafka::toString(consumer.assignment()) << "]" << std::endl;
 
     EXPECT_EQ(topics.size(), consumer.subscription().size());
-    std::for_each(topics.cbegin(), topics.cend(), [&consumer](const auto& topic) { EXPECT_EQ(1, consumer.subscription().count(topic)); });
+    std::ranges::for_each(topics, [&consumer](const auto& topic) { EXPECT_TRUE(consumer.subscription().contains(topic)); });
     EXPECT_EQ(NUM_PARTITIONS * topics.size(), consumer.assignment().size());
 }
 
@@ -1206,7 +1206,7 @@ TEST(KafkaConsumer, SubscribeUnsubscribeThenAssign)
     std::cout << "[" << kafka::utility::getCurrentTime() << "] " << consumer.name() << " subscribed" << std::endl;
 
     EXPECT_EQ(1, consumer.subscription().size());
-    EXPECT_EQ(1, consumer.subscription().count(topic));
+    EXPECT_TRUE(consumer.subscription().contains(topic));
 
     // Unsubscribe topics
     consumer.unsubscribe();
@@ -1258,7 +1258,7 @@ TEST(KafkaConsumer, AssignUnassignAndSubscribe)
     std::cout << "[" << kafka::utility::getCurrentTime() << "] " << consumer.name() << " assignment[" << kafka::toString(consumer.assignment()) << "]" << std::endl;
 
     EXPECT_EQ(1, consumer.subscription().size());
-    EXPECT_EQ(1, consumer.subscription().count(topic));
+    EXPECT_TRUE(consumer.subscription().contains(topic));
     EXPECT_EQ(NUM_PARTITIONS, consumer.assignment().size());
 }
 
@@ -1290,7 +1290,7 @@ TEST(KafkaConsumer, WrongOperation_SubscribeThenAssign)
     std::cout << "[" << kafka::utility::getCurrentTime() << "] " << consumer.name() << " subscribed" << std::endl;
 
     EXPECT_EQ(1, consumer.subscription().size());
-    EXPECT_EQ(1, consumer.subscription().count(topic));
+    EXPECT_TRUE(consumer.subscription().contains(topic));
 
     // Assign topic-partitions -- would throw exception
     EXPECT_KAFKA_THROW(consumer.assign({{topic, partition}}), RD_KAFKA_RESP_ERR__FAIL);
@@ -1384,8 +1384,7 @@ TEST(KafkaConsumer, SubscribeAndPoll)
 
     // Count the EOF
     EXPECT_EQ(assignedPartitions.size(),
-              std::count_if(records.cbegin(), records.cend(),
-                            [](const auto& record) { return record.error().value() == RD_KAFKA_RESP_ERR__PARTITION_EOF; }));
+              std::ranges::count_if(records, [](const auto& record) { return record.error().value() == RD_KAFKA_RESP_ERR__PARTITION_EOF; }));
 
     // Close the consumer
     consumer.close();
@@ -1420,7 +1419,7 @@ TEST(KafkaConsumer, PauseAndResume)
     // Poll 1 message from topic1
     auto records = consumer.poll(KafkaTestUtility::MAX_POLL_MESSAGES_TIMEOUT);
     ASSERT_EQ(1, records.size());
-    EXPECT_EQ(std::get<2>(messages[0]), records.front().value().toString());
+    EXPECT_EQ(std::get<2>(messages.at(0)), records.front().value().toString());
 
     // Pause, then could not poll any message
     consumer.pause();
@@ -1431,7 +1430,7 @@ TEST(KafkaConsumer, PauseAndResume)
     consumer.resume();
     records = consumer.poll(KafkaTestUtility::MAX_POLL_MESSAGES_TIMEOUT);
     ASSERT_EQ(1, records.size());
-    EXPECT_EQ(std::get<2>(messages[1]), records.front().value().toString());
+    EXPECT_EQ(std::get<2>(messages.at(1)), records.front().value().toString());
 
     // Try to pause an invalid partition
     EXPECT_KAFKA_THROW(consumer.pause({kafka::TopicPartition("invalid_topic", 12345)}), RD_KAFKA_RESP_ERR__INVALID_ARG);
@@ -1449,7 +1448,7 @@ TEST(KafkaConsumer, PauseAndResume)
     // Could still poll from topic2
     records = consumer.poll(KafkaTestUtility::MAX_POLL_MESSAGES_TIMEOUT);
     ASSERT_EQ(1, records.size());
-    EXPECT_EQ(std::get<2>(messages2[0]), records.front().value().toString());
+    EXPECT_EQ(std::get<2>(messages2.at(0)), records.front().value().toString());
 
     // No more message (only 1 message from topic2)
     records = consumer.poll(KafkaTestUtility::MAX_POLL_MESSAGES_TIMEOUT);
@@ -1459,7 +1458,7 @@ TEST(KafkaConsumer, PauseAndResume)
     consumer.resume({kafka::TopicPartition(topic1, 0)});
     records = consumer.poll(KafkaTestUtility::MAX_POLL_MESSAGES_TIMEOUT);
     ASSERT_EQ(1, records.size());
-    EXPECT_EQ(std::get<2>(messages[2]), records.front().value().toString());
+    EXPECT_EQ(std::get<2>(messages.at(2)), records.front().value().toString());
 
     consumer.close();
 }
@@ -1491,13 +1490,13 @@ TEST(KafkaConsumer, SeekAfterPause)
     // Poll 1 message from topic
     auto records = consumer.poll(KafkaTestUtility::MAX_POLL_MESSAGES_TIMEOUT);
     ASSERT_EQ(1, records.size());
-    EXPECT_EQ(std::get<2>(messages[0]), records.front().value().toString());
+    EXPECT_EQ(std::get<2>(messages.at(0)), records.front().value().toString());
 
     // First, pause the partition
     consumer.pause();
 
     // Then, seek back (to the very first offset)
-    consumer.seek({topic, 0}, records[0].offset());
+    consumer.seek({topic, 0}, records.at(0).offset());
 
     // Could not poll any message (with partition paused)
     records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
@@ -1511,7 +1510,7 @@ TEST(KafkaConsumer, SeekAfterPause)
     ASSERT_EQ(messages.size(), records.size());
     for (std::size_t i = 0; i < messages.size(); ++i)
     {
-        EXPECT_EQ(std::get<2>(messages[i]), records[i].value().toString());
+        EXPECT_EQ(std::get<2>(messages.at(i)), records.at(i).value().toString());
     }
 }
 
@@ -1544,10 +1543,10 @@ TEST(KafkaConsumer, SeekBeforePause)
     // Poll 1 message from topic
     auto records = consumer.poll(KafkaTestUtility::MAX_POLL_MESSAGES_TIMEOUT);
     ASSERT_EQ(1, records.size());
-    EXPECT_EQ(std::get<2>(messages[0]), records.front().value().toString());
+    EXPECT_EQ(std::get<2>(messages.at(0)), records.front().value().toString());
 
     // First, seek back (to the very first offset)
-    consumer.seek({topic, 0}, records[0].offset());
+    consumer.seek({topic, 0}, records.at(0).offset());
 
     // Then, pause the partition
     consumer.pause();
@@ -1564,7 +1563,7 @@ TEST(KafkaConsumer, SeekBeforePause)
     ASSERT_EQ(messages.size(), records.size());
     for (std::size_t i = 0; i < messages.size(); ++i)
     {
-        EXPECT_EQ(std::get<2>(messages[i]), records[i].value().toString());
+        EXPECT_EQ(std::get<2>(messages.at(i)), records.at(i).value().toString());
     }
 }
 
@@ -1698,8 +1697,8 @@ TEST(KafkaConsumer, OffsetsForTime)
         consumer.subscribe({topic1, topic2});
         for (std::size_t i = 0; i < MESSAGES_NUM; ++i)
         {
-            const auto timepoint = checkPoints[i];
-            const auto expected  = expectedOffsets[i];
+            const auto timepoint = checkPoints.at(i);
+            const auto& expected = expectedOffsets.at(i);
 
             auto offsets = consumer.offsetsForTime({{topic1, partition1}, {topic2, partition2}}, timepoint);
 
@@ -1717,14 +1716,14 @@ TEST(KafkaConsumer, OffsetsForTime)
         {
             try
             {
-                const auto timepoint = checkPoints[i];
+                const auto timepoint = checkPoints.at(i);
                 const auto tp1       = kafka::TopicPartition{topic1, partition1};
                 const auto tp2       = kafka::TopicPartition{topic2, partition2};
                 const auto offsets   = consumer.offsetsForTime({tp1, tp2}, timepoint);
 
-                EXPECT_TRUE((offsets == kafka::TopicPartitionOffsets{{tp1, expectedOffsets[i][tp1]}}
-                             || offsets == kafka::TopicPartitionOffsets{{tp2, expectedOffsets[i][tp2]}}
-                             || offsets == expectedOffsets[i]));                    // Might (partially) succeed
+                EXPECT_TRUE((offsets == kafka::TopicPartitionOffsets{{tp1, expectedOffsets.at(i)[tp1]}}
+                             || offsets == kafka::TopicPartitionOffsets{{tp2, expectedOffsets.at(i)[tp2]}}
+                             || offsets == expectedOffsets.at(i)));                    // Might (partially) succeed
             }
             catch (const kafka::KafkaException& e)
             {
@@ -1737,7 +1736,7 @@ TEST(KafkaConsumer, OffsetsForTime)
     {
         const kafka::clients::consumer::KafkaConsumer consumer(KafkaTestUtility::GetKafkaClientCommonConfig());
 
-        const auto timepoint = checkPoints[0];
+        const auto timepoint = checkPoints.at(0);
 
         EXPECT_KAFKA_THROW({consumer.offsetsForTime({{kafka::utility::getRandomString(), 100}}, timepoint);},
                            RD_KAFKA_RESP_ERR__UNKNOWN_PARTITION);
@@ -1750,13 +1749,13 @@ TEST(KafkaConsumer, OffsetsForTime)
 
         for (std::size_t i = 0; i < MESSAGES_NUM; ++i)
         {
-            const auto timepoint = checkPoints[i];
+            const auto timepoint = checkPoints.at(i);
             const auto validTp   = kafka::TopicPartition{topic1, partition1};
             const auto invalidTp = kafka::TopicPartition{kafka::utility::getRandomString(), 100};
             const auto offsets   = consumer.offsetsForTime({validTp, invalidTp}, timepoint);
 
             std::cout << "Got offsets: " << kafka::toString(offsets) << ", for time: " << kafka::Timestamp(duration_cast<milliseconds>(timepoint.time_since_epoch()).count()).toString() << std::endl;
-            EXPECT_EQ((kafka::TopicPartitionOffsets{{validTp, expectedOffsets[i][validTp]}}), offsets);
+            EXPECT_EQ((kafka::TopicPartitionOffsets{{validTp, expectedOffsets.at(i)[validTp]}}), offsets);
        }
     }
 }
@@ -1806,7 +1805,7 @@ TEST(KafkaConsumer, RecoverByTime)
         auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
         for (std::size_t i = 0; i < records.size(); ++i)
         {
-            const auto& record = records[i];
+            const auto& record = records.at(i);
 
             // Save the timepoint
             persistedTimepoint = record.timestamp();
@@ -1865,8 +1864,8 @@ TEST(KafkaConsumer, RecoverByTime)
     ASSERT_EQ(messages.size(), messagesProcessed.size());
     for (std::size_t i = 0; i < messages.size(); ++i)
     {
-        EXPECT_EQ(messages[i].first,  messagesProcessed[i].first);
-        EXPECT_EQ(messages[i].second, messagesProcessed[i].second);
+        EXPECT_EQ(messages.at(i).first,  messagesProcessed.at(i).first);
+        EXPECT_EQ(messages.at(i).second, messagesProcessed.at(i).second);
     }
 }
 
@@ -1877,11 +1876,12 @@ TEST(KafkaConsumer, AutoCreateTopics)
 
     kafka::clients::consumer::KafkaConsumer consumer(KafkaTestUtility::GetKafkaClientCommonConfig()
                                                         .put("allow.auto.create.topics", "true")
+                                                        .put(kafka::clients::Config::BROKER_ADDRESS_FAMILY, "v4")
                                                         .put(kafka::clients::Config::ERROR_CB,
                                                              // The error would be triggered while consumer tries to subscribe a non-existed topic.
                                                              [](const kafka::Error& error) {
-                                                                 std::cout << "consumer met an error: " << error.toString() << std::endl;
-                                                                 EXPECT_EQ(RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART, error.value());
+                                                                 KafkaTestUtility::DumpError(error);
+                                                                 EXPECT_TRUE(error.value() == RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART);
                                                              }));
 
     // Subscribe topics, but would never make it!
@@ -1902,12 +1902,13 @@ TEST(KafkaConsumer, CreateTopicAfterSubscribe)
 
     bool errCbTriggered = false;
     kafka::clients::consumer::KafkaConsumer consumer(KafkaTestUtility::GetKafkaClientCommonConfig()
+                                                        .put(kafka::clients::Config::BROKER_ADDRESS_FAMILY, "v4")
                                                         .put(kafka::clients::Config::ERROR_CB,
                                                              // The error would be triggered while consumer tries to subscribe a non-existed topic.
                                                              [&errCbTriggered](const kafka::Error& error) {
                                                                  errCbTriggered = true;
                                                                  KafkaTestUtility::DumpError(error);
-                                                                 EXPECT_EQ(RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART, error.value());
+                                                                 EXPECT_TRUE(error.value() == RD_KAFKA_RESP_ERR_UNKNOWN_TOPIC_OR_PART);
                                                              }));
 
     // The topic would be created after 5 seconds
@@ -1940,7 +1941,7 @@ TEST(KafkaConsumer, CooperativeRebalance)
         auto rebalanceCb = [clientId, &partitionsJustRevoked](kafka::clients::consumer::RebalanceEventType et, const kafka::TopicPartitions& tps) {
             if (et == kafka::clients::consumer::RebalanceEventType::PartitionsAssigned) {
                 std::cout << "[" << kafka::utility::getCurrentTime() << "] " << clientId << " assigned partitions: " << kafka::toString(tps) << std::endl;
-                EXPECT_TRUE(std::none_of(tps.cbegin(), tps.cend(), [&partitionsJustRevoked](const auto& tp) { return partitionsJustRevoked.count(tp); }));
+                EXPECT_TRUE(std::ranges::none_of(tps, [&partitionsJustRevoked](const auto& tp) { return partitionsJustRevoked.contains(tp); }));
             } else if (et == kafka::clients::consumer::RebalanceEventType::PartitionsRevoked) {
                 std::cout << "[" << kafka::utility::getCurrentTime() << "] " << clientId << " unassigned partitions: " << kafka::toString(tps) << std::endl;
                 partitionsJustRevoked = tps;
@@ -2023,7 +2024,7 @@ TEST(KafkaConsumer, FetchBrokerMetadataTriggersRejoin)
     std::cout << "[" << kafka::utility::getCurrentTime() << "] assignment: " << kafka::toString(assignment) << std::endl;
 
     // The newly created topic-partitions should be within the assignment as well
-    EXPECT_EQ(1, assignment.count({topic2, 0}));
+    EXPECT_TRUE(assignment.contains({topic2, 0}));
 }
 
 TEST(KafkaConsumer, SubscribeNotConflictWithStatsEvent)

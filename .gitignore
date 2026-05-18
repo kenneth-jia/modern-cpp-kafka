@@ -1,6 +1,16 @@
 *.swp
 *.pyc
+.DS_Store
 *.*~
 
 build/
 install/
+
+# Bazel generated files
+bazel-*/
+MODULE.bazel.lock
+
+# IDE / tooling
+opencode-quota/
+opencode.json
+tui.json

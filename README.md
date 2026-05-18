@@ -1,13 +1,17 @@
-About the *Modern C++ Kafka API*
+Modern C++ Kafka API
 =================================
 
 ![Lifecycle Active](https://img.shields.io/badge/Lifecycle-Active-brightgreen)  
 
 
-The [modern-cpp-kafka API](http://morganstanley.github.io/modern-cpp-kafka/doxygen/annotated.html) is a layer of ***C++*** wrapper based on [librdkafka](https://github.com/confluentinc/librdkafka) (the ***C*** part only), with high quality, but more friendly to users.
+This repository is **forked and actively maintained** from the original upstream repo: https://github.com/morganstanley/modern-cpp-kafka
 
-- By now, [modern-cpp-kafka](https://github.com/morganstanley/modern-cpp-kafka) is compatible with [librdkafka v2.4.0](https://github.com/confluentinc/librdkafka/releases/tag/v2.4.0).
+The original upstream repository has been **archived by Morgan Stanley** and is no longer maintained / accepting updates.
 
+```
+This project follows the same open-source license as the original upstream repository.
+All copyrights belong to the original authors.
+```
 
 ```
 KAFKA is a registered trademark of The Apache Software Foundation and
@@ -15,6 +19,19 @@ has been licensed for use by modern-cpp-kafka. modern-cpp-kafka has no
 affiliation with and is not endorsed by The Apache Software Foundation.
 ```
 
+This personal public fork is kept actively maintained for:
+- Bug fixes
+- Compatibility updates (compiler / C++ standard / dependency upgrades)
+    - Feature improvements
+    - CI workflow maintenance
+
+
+About the modern-cpp-kafka API
+=================================
+
+The [modern-cpp-kafka API](http://morganstanley.github.io/modern-cpp-kafka/doxygen/annotated.html) is a layer of ***C++*** wrapper based on [librdkafka](https://github.com/confluentinc/librdkafka) (the ***C*** part only), with high quality, but more friendly to users.
+
+- By now, [modern-cpp-kafka](https://github.com/morganstanley/modern-cpp-kafka) is compatible with [librdkafka v2.14.1](https://github.com/confluentinc/librdkafka/releases/tag/v2.14.1).
 
 
 # Why it's here
@@ -67,13 +84,7 @@ Eventually, we worked out the ***modern-cpp-kafka***, -- a ***header-only*** lib
 
 * Just include the [`include/kafka`](https://github.com/morganstanley/modern-cpp-kafka/tree/main/include/kafka) directory for your project
 
-* The compiler should support ***C++17***
-
-    * Or, ***C++14***, but with pre-requirements
-
-        - Need ***boost*** headers (for `boost::optional`)
-
-        - For ***GCC*** compiler, it needs optimization options (e.g. `-O2`)
+* The compiler should support ***C++23***
 
 * Dependencies
 
@@ -707,7 +718,6 @@ We're free to set callbacks in `Properties` with a `kafka::clients::ErrorCallbac
     | `LIBRDKAFKA_INCLUDE_DIR`         | ***librdkafka*** headers                                 |
     | `LIBRDKAFKA_LIBRARY_DIR`         | ***librdkafka*** libraries                               |
     | `GTEST_ROOT`                     | ***googletest*** headers and libraries                   |
-    | `BOOST_ROOT`                     | ***boost*** headers and libraries                        |
     | `SASL_LIBRARYDIR`/`SASL_LIBRARY` | [optional] for SASL connection support                    |
     | `RAPIDJSON_INCLUDE_DIRS`         | `addons/KafkaMetrics.h` requires ***rapidjson*** headers |
 

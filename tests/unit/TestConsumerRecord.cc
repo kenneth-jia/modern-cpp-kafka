@@ -7,9 +7,9 @@
 
 namespace {
 
-inline rd_kafka_message_t* mockRdKafkaMessage(kafka::Partition partition, kafka::Offset offset,
-                                              const std::string& key, const std::string& value,
-                                              rd_kafka_resp_err_t respErr = RD_KAFKA_RESP_ERR_NO_ERROR)
+rd_kafka_message_t* mockRdKafkaMessage(kafka::Partition partition, kafka::Offset offset,
+                                       const std::string& key, const std::string& value,
+                                       rd_kafka_resp_err_t respErr = RD_KAFKA_RESP_ERR_NO_ERROR)
 {
     constexpr std::size_t MSG_PRIVATE_LEN = 128;    // the underlying `rk_kafka_msg_t` is longer than `rk_kafka_message_t`
     const std::size_t msgSize = sizeof(rd_kafka_message_t) + MSG_PRIVATE_LEN + key.size() + 1 + value.size() + 1;

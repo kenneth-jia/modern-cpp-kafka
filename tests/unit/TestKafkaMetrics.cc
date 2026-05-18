@@ -378,8 +378,8 @@ TEST(KafkaMetrics, ParseConsumerMetrics)
     {
         auto results = metrics.getString({"type"});
         ASSERT_EQ(1, results.size());
-        EXPECT_TRUE(results[0].first.empty());
-        EXPECT_EQ("consumer", results[0].second);
+        EXPECT_TRUE(results.at(0).first.empty());
+        EXPECT_EQ("consumer", results.at(0).second);
     }
 
     {
@@ -387,14 +387,14 @@ TEST(KafkaMetrics, ParseConsumerMetrics)
         auto results = metrics.getString(keys);
 
         ASSERT_EQ(4, results.size());
-        EXPECT_EQ(kafka::KafkaMetrics::KeysType{"127.0.0.1:29003/2"}, results[0].first);
-        EXPECT_EQ("UP", results[0].second);
-        EXPECT_EQ(kafka::KafkaMetrics::KeysType{"127.0.0.1:29002/1"}, results[1].first);
-        EXPECT_EQ("INIT", results[1].second);
-        EXPECT_EQ(kafka::KafkaMetrics::KeysType{"127.0.0.1:29001/0"}, results[2].first);
-        EXPECT_EQ("UP", results[2].second);
-        EXPECT_EQ(kafka::KafkaMetrics::KeysType{"GroupCoordinator"}, results[3].first);
-        EXPECT_EQ("UP", results[3].second);
+        EXPECT_EQ(kafka::KafkaMetrics::KeysType{"127.0.0.1:29003/2"}, results.at(0).first);
+        EXPECT_EQ("UP", results.at(0).second);
+        EXPECT_EQ(kafka::KafkaMetrics::KeysType{"127.0.0.1:29002/1"}, results.at(1).first);
+        EXPECT_EQ("INIT", results.at(1).second);
+        EXPECT_EQ(kafka::KafkaMetrics::KeysType{"127.0.0.1:29001/0"}, results.at(2).first);
+        EXPECT_EQ("UP", results.at(2).second);
+        EXPECT_EQ(kafka::KafkaMetrics::KeysType{"GroupCoordinator"}, results.at(3).first);
+        EXPECT_EQ("UP", results.at(3).second);
 
         std::cout << "Result for [" << kafka::KafkaMetrics::toString(keys) << "] ==> " << kafka::KafkaMetrics::toString(results) << std::endl;
     }
@@ -406,14 +406,14 @@ TEST(KafkaMetrics, ParseConsumerMetrics)
 
         ASSERT_EQ(4, results.size());
 
-        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29003/2"}, results[0].first);
-        EXPECT_EQ(4978600, results[0].second);
-        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29002/1"}, results[1].first);
-        EXPECT_EQ(5000678, results[1].second);
-        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29001/0"}, results[2].first);
-        EXPECT_EQ(1822536, results[2].second);
-        EXPECT_EQ(std::vector<std::string>{"GroupCoordinator"},  results[3].first);
-        EXPECT_EQ(4976637, results[3].second);
+        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29003/2"}, results.at(0).first);
+        EXPECT_EQ(4978600, results.at(0).second);
+        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29002/1"}, results.at(1).first);
+        EXPECT_EQ(5000678, results.at(1).second);
+        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29001/0"}, results.at(2).first);
+        EXPECT_EQ(1822536, results.at(2).second);
+        EXPECT_EQ(std::vector<std::string>{"GroupCoordinator"},  results.at(3).first);
+        EXPECT_EQ(4976637, results.at(3).second);
 
         std::cout << "Result for [" << kafka::KafkaMetrics::toString(keys) << "] ==> " << kafka::KafkaMetrics::toString(results) << std::endl;
     }
@@ -424,8 +424,8 @@ TEST(KafkaMetrics, ParseConsumerMetrics)
         auto results = metrics.getInt(keys);
 
         ASSERT_EQ(1, results.size());
-        EXPECT_EQ((std::vector<std::string>{}), results[0].first);
-        EXPECT_EQ(123, results[0].second);
+        EXPECT_EQ((std::vector<std::string>{}), results.at(0).first);
+        EXPECT_EQ(123, results.at(0).second);
 
         std::cout << "Result for [" << kafka::KafkaMetrics::toString(keys) << "] ==> " << kafka::KafkaMetrics::toString(results) << std::endl;
     }
@@ -435,10 +435,10 @@ TEST(KafkaMetrics, ParseConsumerMetrics)
         auto results = metrics.getInt(keys);
 
         ASSERT_EQ(2, results.size());
-        EXPECT_EQ((std::vector<std::string>{"0d08e094-cea41296", "0"}), results[0].first);
-        EXPECT_EQ(123, results[0].second);
-        EXPECT_EQ((std::vector<std::string>{"0d08e094-cea41296", "-1"}), results[1].first);
-        EXPECT_EQ(-1, results[1].second);
+        EXPECT_EQ((std::vector<std::string>{"0d08e094-cea41296", "0"}), results.at(0).first);
+        EXPECT_EQ(123, results.at(0).second);
+        EXPECT_EQ((std::vector<std::string>{"0d08e094-cea41296", "-1"}), results.at(1).first);
+        EXPECT_EQ(-1, results.at(1).second);
 
         std::cout << "Result for [" << kafka::KafkaMetrics::toString(keys) << "] ==> " << kafka::KafkaMetrics::toString(results) << std::endl;
     }
@@ -448,10 +448,10 @@ TEST(KafkaMetrics, ParseConsumerMetrics)
         auto results = metrics.getInt(keys);
 
         ASSERT_EQ(2, results.size());
-        EXPECT_EQ((std::vector<std::string>{"0d08e094-cea41296", "partitions", "0"}), results[0].first);
-        EXPECT_EQ(123, results[0].second);
-        EXPECT_EQ((std::vector<std::string>{"0d08e094-cea41296", "partitions", "-1"}), results[1].first);
-        EXPECT_EQ(-1, results[1].second);
+        EXPECT_EQ((std::vector<std::string>{"0d08e094-cea41296", "partitions", "0"}), results.at(0).first);
+        EXPECT_EQ(123, results.at(0).second);
+        EXPECT_EQ((std::vector<std::string>{"0d08e094-cea41296", "partitions", "-1"}), results.at(1).first);
+        EXPECT_EQ(-1, results.at(1).second);
 
         std::cout << "Result for [" << kafka::KafkaMetrics::toString(keys) << "] ==> " << kafka::KafkaMetrics::toString(results) << std::endl;
     }
@@ -469,12 +469,12 @@ TEST(KafkaMetrics, ParseProducerMetrics)
 
         ASSERT_EQ(3, results.size());
 
-        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29003/2"}, results[0].first);
-        EXPECT_EQ(23, results[0].second);
-        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29002/1"}, results[1].first);
-        EXPECT_EQ(0, results[1].second);
-        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29001/0"}, results[2].first);
-        EXPECT_EQ(25, results[2].second);
+        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29003/2"}, results.at(0).first);
+        EXPECT_EQ(23, results.at(0).second);
+        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29002/1"}, results.at(1).first);
+        EXPECT_EQ(0, results.at(1).second);
+        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29001/0"}, results.at(2).first);
+        EXPECT_EQ(25, results.at(2).second);
 
         std::cout << "Result for [" << kafka::KafkaMetrics::toString(keys) << "] ==> " << kafka::KafkaMetrics::toString(results) << std::endl;
     }
@@ -486,12 +486,12 @@ TEST(KafkaMetrics, ParseProducerMetrics)
 
         ASSERT_EQ(3, results.size());
 
-        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29003/2"}, results[0].first);
-        EXPECT_EQ(1, results[0].second);
-        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29002/1"}, results[1].first);
-        EXPECT_EQ(2, results[1].second);
-        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29001/0"}, results[2].first);
-        EXPECT_EQ(3, results[2].second);
+        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29003/2"}, results.at(0).first);
+        EXPECT_EQ(1, results.at(0).second);
+        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29002/1"}, results.at(1).first);
+        EXPECT_EQ(2, results.at(1).second);
+        EXPECT_EQ(std::vector<std::string>{"127.0.0.1:29001/0"}, results.at(2).first);
+        EXPECT_EQ(3, results.at(2).second);
 
         std::cout << "Result for [" << kafka::KafkaMetrics::toString(keys) << "] ==> " << kafka::KafkaMetrics::toString(results) << std::endl;
     }

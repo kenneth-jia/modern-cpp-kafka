@@ -171,7 +171,7 @@ private:
     class DeliveryCbOpaque
     {
     public:
-        DeliveryCbOpaque(Optional<producer::ProducerRecord::Id> id, producer::Callback cb): _recordId(id), _deliveryCb(std::move(cb)) {}
+        DeliveryCbOpaque(std::optional<producer::ProducerRecord::Id> id, producer::Callback cb): _recordId(id), _deliveryCb(std::move(cb)) {}
 
         void operator()(rd_kafka_t* /*rk*/, const rd_kafka_message_t* rkmsg)
         {
@@ -179,7 +179,7 @@ private:
         }
 
     private:
-        const Optional<producer::ProducerRecord::Id> _recordId;
+        const std::optional<producer::ProducerRecord::Id> _recordId;
         const producer::Callback                     _deliveryCb;
     };
 
@@ -263,7 +263,7 @@ KafkaProducer::validateAndReformProperties(const Properties& properties)
     // Check whether it's an available partitioner
     const std::set<std::string> availPartitioners = {"murmur2_random", "murmur2", "random", "consistent", "consistent_random", "fnv1a", "fnv1a_random"};
     auto partitioner = newProperties.getProperty(ProducerConfig::PARTITIONER);
-    if (partitioner && !availPartitioners.count(*partitioner))
+    if (partitioner && !availPartitioners.contains(*partitioner))
     {
         std::string errMsg = "Invalid partitioner [" + *partitioner + "]! Valid options: ";
         bool isTheFirst = true;
@@ -341,39 +341,39 @@ KafkaProducer::send(const producer::ProducerRecord& record,
     std::size_t uvCount = 0;
 
     {   // Topic
-        auto& vu = rkVUs[uvCount++];
+        auto& vu = rkVUs[uvCount++];                    // NOLINT
         vu.vtype  = RD_KAFKA_VTYPE_TOPIC;
         vu.u.cstr = topic;
     }
 
     {   // Partition
-        auto& vu = rkVUs[uvCount++];
+        auto& vu = rkVUs[uvCount++];                    // NOLINT
         vu.vtype = RD_KAFKA_VTYPE_PARTITION;
         vu.u.i32 = partition;
     }
 
     {   // Message flags
-        auto& vu = rkVUs[uvCount++];
+        auto& vu = rkVUs[uvCount++];                    // NOLINT
         vu.vtype = RD_KAFKA_VTYPE_MSGFLAGS;
         vu.u.i   = static_cast<int>(msgFlags);
     }
 
     {   // Key
-        auto& vu = rkVUs[uvCount++];
+        auto& vu = rkVUs[uvCount++];                    // NOLINT
         vu.vtype      = RD_KAFKA_VTYPE_KEY;
         vu.u.mem.ptr  = const_cast<void*>(keyPtr);      // NOLINT
         vu.u.mem.size = keyLen;
     }
 
     {   // Value
-        auto& vu = rkVUs[uvCount++];
+        auto& vu = rkVUs[uvCount++];                    // NOLINT
         vu.vtype      = RD_KAFKA_VTYPE_VALUE;
         vu.u.mem.ptr  = const_cast<void*>(valuePtr);    // NOLINT
         vu.u.mem.size = valueLen;
     }
 
     {   // Opaque
-        auto& vu = rkVUs[uvCount++];
+        auto& vu = rkVUs[uvCount++];                    // NOLINT
         vu.vtype = RD_KAFKA_VTYPE_OPAQUE;
         vu.u.ptr = opaquePtr;
     }
@@ -381,7 +381,7 @@ KafkaProducer::send(const producer::ProducerRecord& record,
     // Headers
     for (const auto& header: record.headers())
     {
-        auto& vu = rkVUs[uvCount++];
+        auto& vu = rkVUs[uvCount++];                    // NOLINT
         vu.vtype         = RD_KAFKA_VTYPE_HEADER;
         vu.u.header.name = header.key.c_str();
         vu.u.header.val  = header.value.data();
@@ -400,13 +400,13 @@ KafkaProducer::send(const producer::ProducerRecord& record,
 inline producer::RecordMetadata
 KafkaProducer::syncSend(const producer::ProducerRecord& record)
 {
-    Optional<Error>          deliveryResult;
+    std::optional<Error>          deliveryResult;
     producer::RecordMetadata recordMetadata;
     std::mutex               mtx;
     std::condition_variable  delivered;
 
     auto deliveryCb = [&deliveryResult, &recordMetadata, &mtx, &delivered] (const producer::RecordMetadata& metadata, const Error& error) {
-        const std::lock_guard<std::mutex> guard(mtx);
+        const std::scoped_lock lock(mtx);
 
         deliveryResult = error;
         recordMetadata = metadata;

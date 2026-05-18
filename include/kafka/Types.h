@@ -9,23 +9,13 @@
 #include <iomanip>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
 
 
-// Use `boost::optional` for C++14, which doesn't support `std::optional`
-#if COMPILER_SUPPORTS_CPP_17
-#include <optional>
-template<class T>
-using Optional = std::optional<T>;
-#else
-#include <boost/optional.hpp>
-#include <boost/optional/optional_io.hpp>
-template<class T>
-using Optional = boost::optional<T>;
-#endif
 
 
 namespace KAFKA_API {
@@ -34,7 +24,8 @@ namespace KAFKA_API {
 class ConstBuffer
 {
 public:
-    explicit ConstBuffer(const void* data = nullptr, std::size_t size = 0): _data(data), _size(size) {}
+    explicit ConstBuffer(const void* data = nullptr, std::size_t size = 0) noexcept
+        : _data(data), _size(size) {}
     const void* data()     const { return _data; }
     std::size_t size()     const { return _size; }
     std::string toString() const
@@ -64,11 +55,7 @@ private:
 /**
  * Infinite timeout.
  */
-#if COMPILER_SUPPORTS_CPP_17
-const inline std::chrono::milliseconds InfiniteTimeout = (std::chrono::milliseconds::max)();
-#else
-const static std::chrono::milliseconds InfiniteTimeout = (std::chrono::milliseconds::max)();
-#endif
+const inline std::chrono::milliseconds InfiniteTimeout = std::chrono::milliseconds::max();
 
 
 /**
@@ -95,11 +82,7 @@ using KeySize   = std::size_t;
 /**
  * Null Key.
  */
-#if COMPILER_SUPPORTS_CPP_17
 const inline Key NullKey = Key{};
-#else
-const static Key NullKey = Key{};
-#endif
 
 /**
  * Record value.
@@ -110,11 +93,7 @@ using ValueSize = std::size_t;
 /**
  * Null Value.
  */
-#if COMPILER_SUPPORTS_CPP_17
 const inline Value NullValue = Value{};
-#else
-const static Value NullValue = Value{};
-#endif
 
 /**
  * Topic set.
@@ -148,10 +127,10 @@ using TopicPartitionOffsets = std::map<TopicPartition, Offset>;
 inline std::string toString(const Topics& topics)
 {
     std::string ret;
-    std::for_each(topics.cbegin(), topics.cend(),
-                  [&ret](const auto& topic) {
-                      ret.append(ret.empty() ? "" : ",").append(topic);
-                  });
+    std::ranges::for_each(topics,
+                          [&ret](const auto& topic) {
+                              ret.append(ret.empty() ? "" : ",").append(topic);
+                          });
     return ret;
 }
 
@@ -169,10 +148,10 @@ inline std::string toString(const TopicPartition& tp)
 inline std::string toString(const TopicPartitions& tps)
 {
     std::string ret;
-    std::for_each(tps.cbegin(), tps.cend(),
-                  [&ret](const auto& tp) {
-                      ret.append((ret.empty() ? "" : ",") + tp.first + "-" + std::to_string(tp.second));
-                  });
+    std::ranges::for_each(tps,
+                          [&ret](const auto& tp) {
+                              ret.append((ret.empty() ? "" : ",") + tp.first + "-" + std::to_string(tp.second));
+                          });
     return ret;
 }
 
@@ -190,12 +169,12 @@ inline std::string toString(const TopicPartitionOffset& tpo)
 inline std::string toString(const TopicPartitionOffsets& tpos)
 {
     std::string ret;
-    std::for_each(tpos.cbegin(), tpos.cend(),
-                  [&ret](const auto& tp_o) {
-                      const TopicPartition& tp = tp_o.first;
-                      const Offset& o  = tp_o.second;
-                      ret.append((ret.empty() ? "" : ",") + tp.first + "-" + std::to_string(tp.second) + ":" + std::to_string(o));
-                  });
+    std::ranges::for_each(tpos,
+                          [&ret](const auto& tp_o) {
+                              const TopicPartition& tp = tp_o.first;
+                              const Offset& o  = tp_o.second;
+                              ret.append((ret.empty() ? "" : ",") + tp.first + "-" + std::to_string(tp.second) + ":" + std::to_string(o));
+                          });
     return ret;
 }
 

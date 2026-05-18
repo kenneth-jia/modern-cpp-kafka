@@ -11,24 +11,21 @@ permissions:
 
 jobs:
   kafka-api-build-doc:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
-        BUILD_SUB_DIR: build/sub-build
+      BUILD_SUB_DIR: build/sub-build
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |
           mkdir -p $BUILD_SUB_DIR
           cd $BUILD_SUB_DIR
 
-          # 1. Install python3-pip
-          sudo apt install -y python3-pip
-          pip3 install markdown
-          # 2. Install doxygen
-          sudo apt install -y doxygen
+          sudo apt update
+          sudo apt install -y python3-markdown doxygen cmake
 
       - name: Config
         run: |
@@ -48,7 +45,7 @@ jobs:
           cp -r $BUILD_SUB_DIR/doc/doxygen document
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
             name: document
             path: document
@@ -57,15 +54,15 @@ jobs:
   kafka-api-deploy-doc:
     needs: [kafka-api-build-doc]
     if: github.event_name == 'push'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           persist-credentials: false
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4
         with:
           name: document
 

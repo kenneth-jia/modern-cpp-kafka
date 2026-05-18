@@ -1,11 +1,12 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
 cc_binary(
     name = "kafka_sync_producer",
 
     srcs = ["kafka_sync_producer.cc"],
 
-    linkopts = ["-lrdkafka"],
-
-    deps = ["//:modern-cpp-kafka-api"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
@@ -13,9 +14,8 @@ cc_binary(
 
     srcs = ["kafka_async_producer_copy_payload.cc"],
 
-    linkopts = ["-lrdkafka"],
-
-    deps = ["//:modern-cpp-kafka-api"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
@@ -23,9 +23,8 @@ cc_binary(
 
     srcs = ["kafka_async_producer_not_copy_payload.cc"],
 
-    linkopts = ["-lrdkafka"],
-
-    deps = ["//:modern-cpp-kafka-api"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
@@ -33,9 +32,8 @@ cc_binary(
 
     srcs = ["kafka_auto_commit_consumer.cc"],
 
-    linkopts = ["-lrdkafka"],
-
-    deps = ["//:modern-cpp-kafka-api"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
@@ -43,8 +41,6 @@ cc_binary(
 
     srcs = ["kafka_manual_commit_consumer.cc"],
 
-    linkopts = ["-lrdkafka"],
-
-    deps = ["//:modern-cpp-kafka-api"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
 )
-

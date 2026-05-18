@@ -61,6 +61,12 @@ public:
      */
     static const constexpr char* BOOTSTRAP_SERVERS         = "bootstrap.servers";
 
+
+    /**
+     * Allowed broker IP address families: any, v4, v6
+     */
+    static const constexpr char* BROKER_ADDRESS_FAMILY     = "broker.address.family";
+
     /**
      * Client identifier.
      */

@@ -1,14 +1,17 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
 cc_test(
     name = "kafka-unit-test",
 
     srcs = glob(["unit/*.cc", "utils/*.h"]),
 
+    copts = ["-std=c++23"],
+
     deps = ["//:modern-cpp-kafka-api",
             "@gtest//:gtest",
             "@gtest//:gtest_main",
-            "@rapidjson//:rapidjson"],
-
-    linkopts = ["-lrdkafka"],
+            "@rapidjson//:rapidjson",
+            "@librdkafka//:rdkafka"],
 
     timeout = "short",
 
@@ -21,11 +24,12 @@ cc_test(
 
     srcs = glob(["integration/*.cc", "utils/*.h"]),
 
+    copts = ["-std=c++23"],
+
     deps = ["//:modern-cpp-kafka-api",
             "@gtest//:gtest",
-            "@gtest//:gtest_main"],
-
-    linkopts = ["-lrdkafka"],
+            "@gtest//:gtest_main",
+            "@librdkafka//:rdkafka"],
 
     timeout = "long",
     shard_count = 8,
@@ -38,15 +42,15 @@ cc_test(
 
     srcs = glob(["robustness/*.cc", "utils/*.h"]),
 
+    copts = ["-std=c++23"],
+
     deps = ["//:modern-cpp-kafka-api",
             "@gtest//:gtest",
-            "@gtest//:gtest_main"],
-
-    linkopts = ["-lrdkafka"],
+            "@gtest//:gtest_main",
+            "@librdkafka//:rdkafka"],
 
     timeout = "long",
     shard_count = 1,
 
     tags = ["robustness"],
 )
-

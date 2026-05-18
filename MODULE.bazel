@@ -1,0 +1,30 @@
+module(name = "modern_cpp_kafka", version = "0.0.0")
+
+bazel_dep(name = "rules_cc", version = "0.2.17")
+
+http_archive = use_repo_rule("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "librdkafka",
+    build_file = "//customrules:librdkafka.BUILD",
+    urls = ["https://github.com/confluentinc/librdkafka/archive/refs/tags/v2.14.1.tar.gz"],
+    strip_prefix = "librdkafka-2.14.1",
+    patch_cmds = [
+        "./configure --disable-ssl --disable-gssapi --disable-zstd --disable-zlib --disable-curl --disable-devel --disable-valgrind --disable-refcnt-debug --disable-lz4-ext --disable-c11threads --no-download",
+        "mkdir -p librdkafka && echo '#include \"../src/rdkafka.h\"' > librdkafka/rdkafka.h",
+    ],
+)
+
+http_archive(
+    name = "gtest",
+    build_file = "//customrules:gtest.BUILD",
+    urls = ["https://github.com/google/googletest/archive/refs/tags/v1.17.0.zip"],
+    strip_prefix = "googletest-1.17.0",
+)
+
+http_archive(
+    name = "rapidjson",
+    build_file = "//customrules:rapidjson.BUILD",
+    urls = ["https://github.com/Tencent/rapidjson/archive/refs/heads/master.zip"],
+    strip_prefix = "rapidjson-master",
+)

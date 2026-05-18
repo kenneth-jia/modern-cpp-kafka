@@ -27,11 +27,7 @@ namespace KAFKA_API { namespace clients { namespace consumer {
     /**
      * Null RebalanceCallback
      */
-#if COMPILER_SUPPORTS_CPP_17
-    const inline RebalanceCallback NullRebalanceCallback = RebalanceCallback{};
-#else
-    const static RebalanceCallback NullRebalanceCallback = RebalanceCallback{};
-#endif
+const inline RebalanceCallback NullRebalanceCallback = RebalanceCallback{};
 
     /**
      * A callback interface that the user can implement to trigger custom actions when a commit request completes.
@@ -41,11 +37,7 @@ namespace KAFKA_API { namespace clients { namespace consumer {
     /**
      * Null OffsetCommitCallback
      */
-#if COMPILER_SUPPORTS_CPP_17
-    const inline OffsetCommitCallback NullOffsetCommitCallback = OffsetCommitCallback{};
-#else
-    const static OffsetCommitCallback NullOffsetCommitCallback = OffsetCommitCallback{};
-#endif
+const inline OffsetCommitCallback NullOffsetCommitCallback = OffsetCommitCallback{};
 
     /**
      * A metadata struct containing the consumer group information.

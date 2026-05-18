@@ -1,11 +1,12 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
 cc_binary(
     name = "kafka-topics",
 
     srcs = ["KafkaTopics.cc"],
 
-    linkopts = ["-lboost_program_options", "-lrdkafka"],
-
-    deps = ["//:modern-cpp-kafka-api"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
@@ -13,9 +14,8 @@ cc_binary(
 
     srcs = ["KafkaConsoleConsumer.cc"],
 
-    linkopts = ["-lboost_program_options", "-lrdkafka"],
-
-    deps = ["//:modern-cpp-kafka-api"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
@@ -23,8 +23,6 @@ cc_binary(
 
     srcs = ["KafkaConsoleProducer.cc"],
 
-    linkopts = ["-lboost_program_options", "-lrdkafka"],
-
-    deps = ["//:modern-cpp-kafka-api"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
 )
-

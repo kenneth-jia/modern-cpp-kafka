@@ -70,8 +70,8 @@ TEST(KafkaRecoverableProducer, SendMessages)
         EXPECT_EQ(messages.size() * 2, records.size());
         for (std::size_t i = 0; i < records.size(); ++i)
         {
-            EXPECT_EQ(messages[i/2].first,  std::string(static_cast<const char*>(records[i].key().data()), records[i].key().size()));
-            EXPECT_EQ(messages[i/2].second, std::string(static_cast<const char*>(records[i].value().data()), records[i].value().size()));
+            EXPECT_EQ(messages.at(i/2).first,  std::string(static_cast<const char*>(records.at(i).key().data()), records.at(i).key().size()));
+            EXPECT_EQ(messages.at(i/2).second, std::string(static_cast<const char*>(records.at(i).value().data()), records.at(i).value().size()));
         }
     }
 }
@@ -104,7 +104,7 @@ TEST(KafkaRecoverableProducer, MockFatalError)
         {
             auto toSend = messagesToSend.front();
             {
-                const std::lock_guard<std::mutex> lock(messagesMutex);
+                const std::scoped_lock lock(messagesMutex);
                 messagesToSend.pop_front();
             }
 
@@ -121,7 +121,7 @@ TEST(KafkaRecoverableProducer, MockFatalError)
 
                              // Would resend the message
                              if (error) {
-                                const std::lock_guard<std::mutex> lock(messagesMutex);
+                                const std::scoped_lock lock(messagesMutex);
                                 messagesToSend.push_front(static_cast<kafka::clients::producer::ProducerRecord::Id>(std::stoi(*payload)));
                              }
 

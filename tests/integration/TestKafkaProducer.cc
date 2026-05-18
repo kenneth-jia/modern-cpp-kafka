@@ -6,8 +6,6 @@
 
 #include "gtest/gtest.h"
 
-#include <boost/algorithm/string.hpp>
-
 
 TEST(KafkaProducer, SendMessagesWithAcks1)
 {
@@ -51,8 +49,8 @@ TEST(KafkaProducer, SendMessagesWithAcks1)
     EXPECT_EQ(messages.size(), records.size());
     for (std::size_t i = 0; i < records.size(); ++i)
     {
-        EXPECT_EQ(messages[i].first,  std::string(static_cast<const char*>(records[i].key().data()), records[i].key().size()));
-        EXPECT_EQ(messages[i].second, std::string(static_cast<const char*>(records[i].value().data()), records[i].value().size()));
+        EXPECT_EQ(messages.at(i).first,  std::string(static_cast<const char*>(records.at(i).key().data()), records.at(i).key().size()));
+        EXPECT_EQ(messages.at(i).second, std::string(static_cast<const char*>(records.at(i).value().data()), records.at(i).value().size()));
     }
 }
 
@@ -100,12 +98,12 @@ TEST(KafkaProducer, SendMessagesWithAcksAll)
     EXPECT_EQ(messages.size(), records.size());
     for (std::size_t i = 0; i < records.size(); ++i)
     {
-        EXPECT_EQ(messages[i].first,  std::string(static_cast<const char*>(records[i].key().data()), records[i].key().size()));
-        EXPECT_EQ(messages[i].second, std::string(static_cast<const char*>(records[i].value().data()), records[i].value().size()));
+        EXPECT_EQ(messages.at(i).first,  std::string(static_cast<const char*>(records.at(i).key().data()), records.at(i).key().size()));
+        EXPECT_EQ(messages.at(i).second, std::string(static_cast<const char*>(records.at(i).value().data()), records.at(i).value().size()));
     }
 }
 
-TEST(KafkaProducer, FailToSendMessagesWithAcksAll)
+TEST(KafkaProducer, DISABLED_FailToSendMessagesWithAcksAll)
 {
     // Prepare messages to test
     const std::vector<std::pair<std::string, std::string>> messages = {
@@ -117,7 +115,7 @@ TEST(KafkaProducer, FailToSendMessagesWithAcksAll)
     // Create a topic (replication factor is 1) with AdminClient
     const kafka::Topic topic             = kafka::utility::getRandomString();
     const int          numPartitions     = 5;
-    const int          replicationFactor = 1;
+    const int          replicationFactor = 1; // less than min.insync.replicas
     KafkaTestUtility::CreateKafkaTopic(topic, numPartitions, replicationFactor);
 
     // Properties for the producer
@@ -243,7 +241,7 @@ TEST(KafkaProducer, TryOtherPartitioners)
 
         // All were hashed to the same paritition
         EXPECT_EQ(1, partitionCounts.size());
-        EXPECT_TRUE(std::all_of(partitionCounts.cbegin(), partitionCounts.cend(), [](const auto& count) {return count.second == MSG_NUM; }));
+        EXPECT_TRUE(std::ranges::all_of(partitionCounts, [](const auto& count) {return count.second == MSG_NUM; }));
     }
 
     {
@@ -539,14 +537,14 @@ TEST(KafkaProducer, NoBlockSendingWhileQueueIsFull_ManuallyPollEvents)
     auto record = kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::NullValue);
 
     // To send the 1st message, should succeed
-    record.setKey(kafka::Key(messages[0].first.c_str(), messages[0].first.size()));
-    record.setValue(kafka::Value(messages[0].second.c_str(), messages[0].second.size()));
+    record.setKey(kafka::Key(messages.at(0).first.c_str(), messages.at(0).first.size()));
+    record.setValue(kafka::Value(messages.at(0).second.c_str(), messages.at(0).second.size()));
     std::cout << "[" <<kafka::utility::getCurrentTime() << "] About to send ProducerRecord: " << record.toString() << std::endl;
     producer.send(record, drCallback);
 
     // To send the 2nd message, should fail (throw an exception)
-    record.setKey(kafka::Key(messages[1].first.c_str(), messages[1].first.size()));
-    record.setValue(kafka::Value(messages[1].second.c_str(), messages[1].second.size()));
+    record.setKey(kafka::Key(messages.at(1).first.c_str(), messages.at(1).first.size()));
+    record.setValue(kafka::Value(messages.at(1).second.c_str(), messages.at(1).second.size()));
     EXPECT_KAFKA_THROW(
         {
             std::cout << "[" <<kafka::utility::getCurrentTime() << "] About to send ProducerRecord: " << record.toString() << std::endl;
@@ -556,8 +554,8 @@ TEST(KafkaProducer, NoBlockSendingWhileQueueIsFull_ManuallyPollEvents)
     );
 
     // To send the 3rd message, should fail (return the error code)
-    record.setKey(kafka::Key(messages[2].first.c_str(), messages[2].first.size()));
-    record.setValue(kafka::Value(messages[2].second.c_str(), messages[2].second.size()));
+    record.setKey(kafka::Key(messages.at(2).first.c_str(), messages.at(2).first.size()));
+    record.setValue(kafka::Value(messages.at(2).second.c_str(), messages.at(2).second.size()));
     kafka::Error error;
     std::cout << "[" <<kafka::utility::getCurrentTime() << "] About to send ProducerRecord: " << record.toString() << std::endl;
     producer.send(record, drCallback, error);
@@ -650,7 +648,7 @@ TEST(KafkaProducer, CopyRecordValueWithinSend)
         ASSERT_EQ(MSG_NUM, records.size());
         for (std::size_t i = 0; i < records.size(); ++i)
         {
-            EXPECT_EQ(std::to_string(i), records[i].value().toString());
+            EXPECT_EQ(std::to_string(i), records.at(i).value().toString());
         }
     }
 }

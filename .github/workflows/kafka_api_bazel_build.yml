@@ -7,9 +7,9 @@ on:
       - main
 
 env:
-  KAFKA_SRC_LINK: https://archive.apache.org/dist/kafka/3.3.1/kafka_2.13-3.3.1.tgz
+  KAFKA_SRC_LINK: https://www.apache.org/dyn/closer.lua/kafka/4.2.0/kafka_2.13-4.2.0.tgz?action=download
   CPU_CORE_NUM:   2
-  LIBRDKAFKA_TAG: v2.4.0
+  LIBRDKAFKA_TAG: v2.14.1
 
 jobs:
   kafka-api-bazel-build:
@@ -22,7 +22,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - os:                ubuntu-22.04
+          - os:                macos-26
+            test-labels:       unit,integration
+            #test-labels:       robustness
+          - os:                ubuntu-24.04
             test-labels:       unit,integration
 
     steps:
@@ -36,32 +39,45 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          # 1. Install librdkafka
-          git clone https://github.com/edenhill/librdkafka.git
-          cd librdkafka
-          git reset --hard ${LIBRDKAFKA_TAG}
-          ./configure
-          make -j${CPU_CORE_NUM} && sudo make install
-          cd ../
-
-          # 2. Install boost lib
+          # Install bazel
           if [[ ${OS_VERSION} == 'ubuntu'* ]]; then
-            sudo apt install -y libboost-all-dev
-          elif [[ ${OS_VERSION} == 'macos'* ]]; then
-            brew install boost
+            sudo apt install -y zlib1g-dev
+
+            sudo apt install apt-transport-https curl gnupg -y
+            curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor >bazel-archive-keyring.gpg
+            sudo mv bazel-archive-keyring.gpg /usr/share/keyrings
+            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
+            sudo apt update && sudo apt install -y bazel
           fi
 
-          # 3. Install Jre, Kafka for integration/regression tests
+          bazel --version
+
+          # Install new g++ version to support C++23
+          if [[ ${OS_VERSION} == 'ubuntu-24.04' ]]; then
+            sudo apt install -y gcc-14 g++-14
+            sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+            sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
+            sudo update-alternatives --set gcc /usr/bin/gcc-14
+            sudo update-alternatives --set g++ /usr/bin/g++-14
+            g++ --version
+          fi
+
+          # Install Jre, Kafka for integration/regression tests
           if [[ ${TEST_LABELS} == *'integration'* ]] || [[ ${TEST_LABELS} == *'robustness'* ]]; then
-            # Install Jre
-            if [[ ${OS_VERSION} == 'ubuntu-22.04' ]]; then
-              sudo apt install -y openjdk-18-jre
+            # For ubuntu
+            if [[ ${OS_VERSION} == 'ubuntu-24.04' ]]; then
+              # Install Jre
+              sudo apt install -y default-jre
+              java -version
+
+              # Install lsof
+              sudo apt install -y lsof
             fi
 
             # Install kafka
             time wget -nv ${KAFKA_SRC_LINK}
-            tar -xzf `basename ${KAFKA_SRC_LINK}`
-            export PATH=`pwd`/`basename ${KAFKA_SRC_LINK} .tgz`/bin:$PATH
+            mkdir -p kafka && tar -xzf `basename ${KAFKA_SRC_LINK}` -C kafka --strip-components=1
+            export PATH=`pwd`/kafka/bin:$PATH
 
             # Save the PATH to environment file
             echo "PATH=${PATH}" >> $GITHUB_ENV
@@ -82,13 +98,17 @@ jobs:
           if [[ ${TEST_LABELS} == *'integration'* ]] || [[ ${TEST_LABELS} == *'robustness'* ]]; then
             # Start Kafka cluster
             rm -f test.env
-            scripts/start-local-kafka-cluster.py --zookeeper-port 52181 --broker-ports 50091 50092 50093 --temp-dir ./tmp &
+            scripts/start-local-kafka-cluster.py --controller-port 52181 --broker-ports 50091 50092 50093 &
 
             # Wait server to be ready
             for i in {1..60}; do cat test.env 2>/dev/null && break || sleep 1; done
 
             # Set the environment variables: KAFKA_BROKER_LIST, KAFKA_BROKER_PIDS
             source test.env
+
+            cat test.env
+            ps aux | grep kafka
+
           fi
 
           # Run tests
@@ -98,6 +118,5 @@ jobs:
           if [[ ${TEST_LABELS} == *'integration'* ]] || [[ ${TEST_LABELS} == *'robustness'* ]]; then
             # Stop kafka cluster
             kafka-server-stop.sh
-            zookeeper-server-stop.sh
           fi
 

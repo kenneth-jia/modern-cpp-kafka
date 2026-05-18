@@ -134,7 +134,7 @@ TEST(Properties, Validation)
     props.put("whatever", "somevalue");
 
     // Test with invalid keys
-    auto tryWithInvalidKey = [&props](auto v)
+    auto tryWithInvalidKey = [&props](const auto& v)
     {
         try
         {

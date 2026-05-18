@@ -55,7 +55,7 @@ public:
     /**
      * The id to identify the message (consistent with `Producer::Metadata::recordId()`).
      */
-    Optional<Id>   id()      const { return _id; }
+    std::optional<Id> id()   const { return _id; }
 
     /**
      * The headers.
@@ -97,12 +97,12 @@ public:
     }
 
 private:
-    Topic        _topic;
-    Partition    _partition;
-    Key          _key;
-    Value        _value;
-    Headers      _headers;
-    Optional<Id> _id;
+    Topic             _topic;
+    Partition         _partition;
+    Key               _key;
+    Value             _value;
+    Headers           _headers;
+    std::optional<Id> _id;
 };
 
 } } } // end of KAFKA_API::clients::producer

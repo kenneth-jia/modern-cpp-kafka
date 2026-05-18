@@ -28,7 +28,7 @@ public:
     RecordMetadata(const RecordMetadata& another) { *this = another; }
 
     // This is only called by the KafkaProducer::deliveryCallback (with a valid rkmsg pointer)
-    RecordMetadata(const rd_kafka_message_t* rkmsg, Optional<ProducerRecord::Id> recordId)
+    RecordMetadata(const rd_kafka_message_t* rkmsg, std::optional<ProducerRecord::Id> recordId)
         : _rkmsg(rkmsg), _recordId(recordId) {}
 
     RecordMetadata& operator=(const RecordMetadata& another)
@@ -69,16 +69,16 @@ public:
     /**
      * The offset of the record in the topic/partition.
      */
-    Optional<Offset>             offset()     const
+    std::optional<Offset>             offset()     const
     {
         auto offset = _rkmsg ? _rkmsg->offset : _cachedInfo->offset;
-        return (offset != RD_KAFKA_OFFSET_INVALID) ? Optional<Offset>(offset) : Optional<Offset>();
+        return (offset != RD_KAFKA_OFFSET_INVALID) ? std::optional<Offset>(offset) : std::optional<Offset>();
     }
 
     /**
      * The recordId could be used to identify the acknowledged message.
      */
-    Optional<ProducerRecord::Id> recordId()   const
+    std::optional<ProducerRecord::Id> recordId()   const
     {
         return _recordId;
     }
@@ -176,7 +176,7 @@ private:
 
     std::unique_ptr<CachedInfo>  _cachedInfo;
     const rd_kafka_message_t*    _rkmsg    = nullptr;
-    Optional<ProducerRecord::Id> _recordId;
+    std::optional<ProducerRecord::Id> _recordId;
 };
 
 /**

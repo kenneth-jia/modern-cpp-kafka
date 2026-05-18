@@ -5,6 +5,8 @@
 #include <signal.h>
 #include <string>
 
+namespace {
+
 std::atomic_bool running = {true};
 
 void stopRunning(int sig) {
@@ -17,6 +19,8 @@ void stopRunning(int sig) {
         signal(SIGINT, SIG_IGN); // NOLINT
     }
 }
+
+} // end of namespace
 
 int main()
 {
