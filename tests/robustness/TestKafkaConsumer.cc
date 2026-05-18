@@ -5,8 +5,6 @@
 
 #include "gtest/gtest.h"
 
-#include <boost/algorithm/string.hpp>
-
 #include <atomic>
 #include <chrono>
 #include <cstring>
@@ -37,7 +35,7 @@ TEST(KafkaConsumer, DISABLED_AlwaysFinishClosing_ManuallyPollEvents)
     props.put(kafka::clients::consumer::ConsumerConfig::AUTO_OFFSET_RESET,  "earliest");
     props.put(kafka::clients::consumer::ConsumerConfig::SOCKET_TIMEOUT_MS,  "2000");
 
-    volatile std::size_t commitCbCount = 0;
+    std::atomic<std::size_t> commitCbCount = 0;
     {
         // Start a consumer (which need to call `pollEvents()` to trigger the commit callback)
         kafka::clients::consumer::KafkaConsumer consumer(props.put(kafka::clients::Config::ENABLE_MANUAL_EVENTS_POLL, "true")
@@ -50,18 +48,18 @@ TEST(KafkaConsumer, DISABLED_AlwaysFinishClosing_ManuallyPollEvents)
 
         // Poll messages
         auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
-        ASSERT_TRUE(std::none_of(records.cbegin(), records.cend(), [](const auto& record){ return record.error(); }));
+        ASSERT_TRUE(std::ranges::none_of(records, [](const auto& record){ return static_cast<bool>(record.error()); }));
         ASSERT_EQ(messages.size(), records.size());
 
         for (std::size_t i = 0; i < records.size(); ++i)
         {
-            EXPECT_EQ(topic,     records[i].topic());
-            EXPECT_EQ(partition, records[i].partition());
-            EXPECT_EQ(std::get<1>(messages[i]), records[i].key().toString());
-            EXPECT_EQ(std::get<2>(messages[i]), records[i].value().toString());
+            EXPECT_EQ(topic,     records.at(i).topic());
+            EXPECT_EQ(partition, records.at(i).partition());
+            EXPECT_EQ(std::get<1>(messages.at(i)), records.at(i).key().toString());
+            EXPECT_EQ(std::get<2>(messages.at(i)), records.at(i).value().toString());
 
-            const kafka::Offset expectedOffset = records[i].offset() + 1;
-            consumer.commitAsync(records[i],
+            const kafka::Offset expectedOffset = records.at(i).offset() + 1;
+            consumer.commitAsync(records.at(i),
                                  [expectedOffset, topic, partition, &commitCbCount](const kafka::TopicPartitionOffsets& tpos, const kafka::Error& error){
                                      std::cout << "[" << kafka::utility::getCurrentTime() << "] offset commit callback for offset[" << expectedOffset << "], got result[" << error.message() << "], tpos[" << kafka::toString(tpos) << "]" << std::endl;
                                      EXPECT_EQ(expectedOffset, tpos.at({topic, partition}));
@@ -105,7 +103,7 @@ TEST(KafkaConsumer, DISABLED_CommitOffsetWhileBrokersStop)
                             .put(kafka::clients::consumer::ConsumerConfig::SOCKET_TIMEOUT_MS,  "2000")      // Just don't want to wait too long for the commit-offset callback.
                             .put(kafka::clients::Config::ERROR_CB,                             KafkaTestUtility::DumpError);
 
-    volatile std::size_t commitCbCount = 0;
+    std::atomic<std::size_t> commitCbCount = 0;
     {
         // Start a consumer
         kafka::clients::consumer::KafkaConsumer consumer(props);
@@ -122,7 +120,7 @@ TEST(KafkaConsumer, DISABLED_CommitOffsetWhileBrokersStop)
         {
             // Poll messages
             auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
-            ASSERT_TRUE(std::none_of(records.cbegin(), records.cend(), [](const auto& record){ return record.error(); }));
+            ASSERT_TRUE(std::ranges::none_of(records, [](const auto& record){ return static_cast<bool>(record.error()); }));
             ASSERT_EQ(messages.size(), records.size());
             std::cout << "[" << kafka::utility::getCurrentTime() << "] " << consumer.name() << " polled "  << records.size() << " messages" << std::endl;
 
@@ -131,14 +129,14 @@ TEST(KafkaConsumer, DISABLED_CommitOffsetWhileBrokersStop)
 
             for (std::size_t i = 0; i < records.size(); ++i)
             {
-                EXPECT_EQ(topic,     records[i].topic());
-                EXPECT_EQ(partition, records[i].partition());
-                EXPECT_EQ(std::get<1>(messages[i]), records[i].key().toString());
-                EXPECT_EQ(std::get<2>(messages[i]), records[i].value().toString());
+                EXPECT_EQ(topic,     records.at(i).topic());
+                EXPECT_EQ(partition, records.at(i).partition());
+                EXPECT_EQ(std::get<1>(messages.at(i)), records.at(i).key().toString());
+                EXPECT_EQ(std::get<2>(messages.at(i)), records.at(i).value().toString());
 
                 // Try to commit the offsets
-                const kafka::Offset expectedOffset = records[i].offset() + 1;
-                consumer.commitAsync(records[i],
+                const kafka::Offset expectedOffset = records.at(i).offset() + 1;
+                consumer.commitAsync(records.at(i),
                                      [expectedOffset, topic, partition, &commitCbCount](const kafka::TopicPartitionOffsets& tpos, const kafka::Error& error){
                                          std::cout << "[" << kafka::utility::getCurrentTime() << "] offset commit callback for offset[" << expectedOffset << "], result[" << error.message() << "], tpos[" << kafka::toString(tpos) << "]" << std::endl;
                                          EXPECT_EQ(expectedOffset, tpos.at({topic, partition}));
@@ -199,7 +197,7 @@ TEST(KafkaConsumer, BrokerStopBeforeConsumerStart)
     // Fetch all these EOFs
     auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
     EXPECT_FALSE(records.empty());
-    ASSERT_TRUE(std::all_of(records.cbegin(), records.cend(), [](const auto& record){ return record.error().value() == RD_KAFKA_RESP_ERR__PARTITION_EOF; }));
+    ASSERT_TRUE(std::ranges::all_of(records, [](const auto& record){ return record.error().value() == RD_KAFKA_RESP_ERR__PARTITION_EOF; }));
 
     std::cout << "[" << kafka::utility::getCurrentTime() << "] " << consumer.name() << " polled " << records.size() << " EOFs" << std::endl;
 }
@@ -248,7 +246,7 @@ TEST(KafkaConsumer, BrokerStopBeforeSubscription)
     // Fetch all these EOFs
     auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer);
     EXPECT_FALSE(records.empty());
-    ASSERT_TRUE(std::all_of(records.cbegin(), records.cend(), [](const auto& record){ return record.error().value() == RD_KAFKA_RESP_ERR__PARTITION_EOF; }));
+    ASSERT_TRUE(std::ranges::all_of(records, [](const auto& record){ return record.error().value() == RD_KAFKA_RESP_ERR__PARTITION_EOF; }));
 
     std::cout << "[" << kafka::utility::getCurrentTime() << "] " << consumer.name() << " polled " << records.size() << " EOFs" << std::endl;
 }
@@ -303,7 +301,7 @@ TEST(KafkaConsumer, BrokerStopBeforeSeek)
     // Fetch messages (only EOFs could be got)
     auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer, std::chrono::seconds(10));
     EXPECT_FALSE(records.empty());
-    ASSERT_TRUE(std::all_of(records.cbegin(), records.cend(), [](const auto& record){ return record.error().value() == RD_KAFKA_RESP_ERR__PARTITION_EOF; }));
+    ASSERT_TRUE(std::ranges::all_of(records, [](const auto& record){ return record.error().value() == RD_KAFKA_RESP_ERR__PARTITION_EOF; }));
 
     std::cout << "[" << kafka::utility::getCurrentTime() << "] " << consumer.name() << " polled " << records.size() << " EOFs" << std::endl;
 }
@@ -351,7 +349,7 @@ TEST(KafkaConsumer, BrokerStopDuringMsgPoll)
     // Fetch all these messages (would get messages once the brokers recover)
     auto records = KafkaTestUtility::ConsumeMessagesUntilTimeout(consumer, std::chrono::seconds(10));
     EXPECT_EQ(messages.size(), records.size());
-    EXPECT_TRUE(std::none_of(records.cbegin(), records.cend(), [](const auto& record){ return record.error(); }));
+    EXPECT_TRUE(std::ranges::none_of(records, [](const auto& record){ return static_cast<bool>(record.error()); }));
 
     std::cout << "[" << kafka::utility::getCurrentTime() << "] " << consumer.name() << " polled " << records.size() << " messages" << std::endl;
 }

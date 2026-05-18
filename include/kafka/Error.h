@@ -118,7 +118,7 @@ public:
     /**
      * Show whether the operation may be retried.
      */
-    Optional<bool>  isRetriable() const
+    std::optional<bool>  isRetriable() const
     {
         return _rkError ? rd_kafka_error_is_retriable(_rkError.get()) : _isRetriable;
     }
@@ -136,12 +136,12 @@ public:
     }
 
 private:
-    rd_kafka_error_shared_ptr _rkError;     // For error with rich info
-    rd_kafka_resp_err_t       _respErr{};   // For error with a simple response code
-    Optional<std::string>     _message;     // Additional detailed message (if any)
-    bool                      _isFatal          = false;
-    bool                      _txnRequiresAbort = false;
-    Optional<bool>            _isRetriable; // Retriable flag (if any)
+    rd_kafka_error_shared_ptr   _rkError;     // For error with rich info
+    rd_kafka_resp_err_t         _respErr{};   // For error with a simple response code
+    std::optional<std::string>  _message;     // Additional detailed message (if any)
+    bool                        _isFatal          = false;
+    bool                        _txnRequiresAbort = false;
+    std::optional<bool>         _isRetriable; // Retriable flag (if any)
 };
 
 } // end of KAFKA_API

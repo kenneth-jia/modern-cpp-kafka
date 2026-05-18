@@ -68,7 +68,7 @@ struct Timestamp
         const std::time_t time = std::chrono::system_clock::to_time_t(timepoint);
         std::ostringstream oss;
         std::tm tmBuf = {};
-#if !defined(WIN32)
+#ifndef WIN32
         oss << std::put_time(localtime_r(&time, &tmBuf), "%F %T") << "." << std::setfill('0') << std::setw(3) << (v % 1000);
 #else
         localtime_s(&tmBuf, &time);

@@ -33,8 +33,7 @@ TEST(Header, Headers)
     };
 
     kafka::Headers headers;
-    std::for_each(kvs.cbegin(), kvs.cend(),
-                  [&headers](const auto& kv) { headers.emplace_back(kv.first, kafka::Header::Value(kv.second.c_str(), kv.second.size())); });
+    std::ranges::for_each(kvs, [&headers](const auto& kv) { headers.emplace_back(kv.first, kafka::Header::Value(kv.second.c_str(), kv.second.size())); });
 
     EXPECT_EQ("k1:v1,k2:v2,k3:v3", kafka::toString(headers));
 }

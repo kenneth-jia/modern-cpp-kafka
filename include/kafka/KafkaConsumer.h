@@ -249,19 +249,11 @@ private:
     static const constexpr char* ENABLE_AUTO_OFFSET_STORE = "enable.auto.offset.store";
     static const constexpr char* AUTO_COMMIT_INTERVAL_MS  = "auto.commit.interval.ms";
 
-#if COMPILER_SUPPORTS_CPP_17
     static constexpr int DEFAULT_SUBSCRIBE_TIMEOUT_MS   = 30000;
     static constexpr int DEFAULT_UNSUBSCRIBE_TIMEOUT_MS = 10000;
     static constexpr int DEFAULT_QUERY_TIMEOUT_MS       = 10000;
     static constexpr int DEFAULT_SEEK_TIMEOUT_MS        = 10000;
     static constexpr int SEEK_RETRY_INTERVAL_MS         = 5000;
-#else
-    enum { DEFAULT_SUBSCRIBE_TIMEOUT_MS   = 30000 };
-    enum { DEFAULT_UNSUBSCRIBE_TIMEOUT_MS = 10000 };
-    enum { DEFAULT_QUERY_TIMEOUT_MS       = 10000 };
-    enum { DEFAULT_SEEK_TIMEOUT_MS        = 10000 };
-    enum { SEEK_RETRY_INTERVAL_MS         = 5000  };
-#endif
 
     enum class CommitType { Sync, Async };
     void commit(const TopicPartitionOffsets& topicPartitionOffsets, CommitType type);
@@ -298,10 +290,10 @@ private:
     Topics          _userSubscription;
 
     enum class PendingEvent { PartitionsAssignment, PartitionsRevocation };
-    Optional<PendingEvent> _pendingEvent;
+    std::optional<PendingEvent> _pendingEvent;
 
     // Identify whether the "partition.assignment.strategy" is "cooperative-sticky"
-    Optional<bool> _cooperativeEnabled;
+    std::optional<bool> _cooperativeEnabled;
     bool isCooperativeEnabled() const { return _cooperativeEnabled && *_cooperativeEnabled; }
 
     // The offsets to store (and commit later)
@@ -376,7 +368,7 @@ KafkaConsumer::KafkaConsumer(const Properties& properties)
     // Pick up the "max.poll.records" property
     if (auto maxPollRecordsProperty = properties.getProperty(ConsumerConfig::MAX_POLL_RECORDS))
     {
-        const std::string maxPollRecords = *maxPollRecordsProperty;
+        const std::string& maxPollRecords = *maxPollRecordsProperty;
         _maxPollRecords = static_cast<std::size_t>(std::stoi(maxPollRecords));
     }
     _properties.put(ConsumerConfig::MAX_POLL_RECORDS, std::to_string(_maxPollRecords));
@@ -384,7 +376,7 @@ KafkaConsumer::KafkaConsumer(const Properties& properties)
     // Pick up the "enable.auto.commit" property
     if (auto enableAutoCommitProperty = properties.getProperty(ConsumerConfig::ENABLE_AUTO_COMMIT))
     {
-        const std::string enableAutoCommit = *enableAutoCommitProperty;
+        const std::string& enableAutoCommit = *enableAutoCommitProperty;
 
         auto isTrue  = [](const std::string& str) { return str == "1" || str == "true"; };
         auto isFalse = [](const std::string& str) { return str == "0" || str == "false"; };

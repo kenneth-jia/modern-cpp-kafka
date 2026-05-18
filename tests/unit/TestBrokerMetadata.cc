@@ -30,7 +30,8 @@ TEST(BrokerMetadata, Basic)
     const std::size_t numPartition = numNode;
 
     kafka::BrokerMetadata metadata(topic);
-    metadata.setOrigNodeName(nodes[0].host);
+    ASSERT_FALSE(nodes.empty());
+    metadata.setOrigNodeName(nodes.at(0).host);
 
     // Add nodes
     for (const auto& node: nodes)
@@ -41,24 +42,24 @@ TEST(BrokerMetadata, Basic)
     EXPECT_EQ(nodes.size(), metadata.nodes().size());
 
     // Add info for partitions
-    for (kafka::Partition partition = 0; partition < static_cast<int>(numPartition); ++partition)
+    for (std::size_t partition = 0; partition < numPartition; ++partition)
     {
-        kafka::BrokerMetadata::PartitionInfo partitionInfo(nodes[static_cast<std::size_t>(partition)].id);
+        kafka::BrokerMetadata::PartitionInfo partitionInfo(nodes.at(partition).id);
         for (const auto& node: nodes)
         {
             partitionInfo.addReplica(node.id);
             partitionInfo.addInSyncReplica(node.id);
         }
-        metadata.addPartitionInfo(partition, partitionInfo);
+        metadata.addPartitionInfo(static_cast<kafka::Partition>(partition), partitionInfo);
     }
 
     EXPECT_EQ(topic, metadata.topic());
     EXPECT_EQ(numPartition, metadata.partitions().size());
 
-    for (kafka::Partition partition = 0; partition < static_cast<int>(numPartition); ++partition)
+    for (std::size_t partition = 0; partition < numPartition; ++partition)
     {
-        const auto& partitionInfo = metadata.partitions().at(partition);
-        EXPECT_EQ(nodes[static_cast<std::size_t>(partition)].id, partitionInfo.leader);
+        const auto& partitionInfo = metadata.partitions().at(static_cast<kafka::Partition>(partition));
+        EXPECT_EQ(nodes.at(partition).id, partitionInfo.leader);
         EXPECT_EQ(numNode, partitionInfo.replicas.size());
         EXPECT_EQ(numNode, partitionInfo.inSyncReplicas.size());
     }
@@ -78,21 +79,21 @@ TEST(BrokerMetadata, IncompleteInfo)
     const std::size_t numPartition = numNode;
 
     kafka::BrokerMetadata metadata(topic);
-    metadata.setOrigNodeName(nodes[0].host);
+    metadata.setOrigNodeName(nodes.at(0).host);
 
     // Add nodes (not complete)
-    metadata.addNode(nodes[0].id, nodes[0].host, nodes[0].port);
+    metadata.addNode(nodes.at(0).id, nodes.at(0).host, nodes.at(0).port);
 
     // Add info for partitions
-    for (kafka::Partition partition = 0; partition < static_cast<int>(numPartition); ++partition)
+    for (std::size_t partition = 0; partition < numPartition; ++partition)
     {
-        kafka::BrokerMetadata::PartitionInfo partitionInfo(nodes[static_cast<std::size_t>(partition)].id);
+        kafka::BrokerMetadata::PartitionInfo partitionInfo(nodes.at(partition).id);
         for (const auto& node: nodes)
         {
             partitionInfo.addReplica(node.id);
             partitionInfo.addInSyncReplica(node.id);
         }
-        metadata.addPartitionInfo(partition, partitionInfo);
+        metadata.addPartitionInfo(static_cast<kafka::Partition>(partition), partitionInfo);
     }
 
     const std::string expectedMetadata = std::string("originatingNode[server1], topic[topicName], partitions{")

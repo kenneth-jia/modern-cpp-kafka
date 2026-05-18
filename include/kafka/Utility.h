@@ -22,7 +22,7 @@ inline std::string getLocalTimeString(const std::chrono::system_clock::time_poin
     auto time = std::chrono::system_clock::to_time_t(timePoint);
     std::tm tmBuf = {};
 
-#if !defined(WIN32)
+#ifndef WIN32
     localtime_r(&time, &tmBuf);
 #else
     localtime_s(&tmBuf, &time);

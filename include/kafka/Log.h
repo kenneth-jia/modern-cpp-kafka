@@ -16,7 +16,7 @@ namespace KAFKA_API {
 
 struct Log
 {
-    enum Level
+    enum class Level
     {
         Emerg   = 0,
         Alert   = 1,
@@ -33,7 +33,7 @@ struct Log
         static const std::vector<std::string> levelNames = {"EMERG", "ALERT", "CRIT", "ERR", "WARNING", "NOTICE", "INFO", "DEBUG", "INVALID"};
         static const std::size_t              maxIndex   = levelNames.size() - 1;
 
-        return levelNames[(std::min)(level, maxIndex)];
+        return levelNames.at((std::min)(level, maxIndex));
     }
 };
 
@@ -47,7 +47,7 @@ public:
 
     LogBuffer& clear()
     {
-        _buf[0] = 0;
+        _buf.at(0) = 0;
         _wptr = _buf.data();
         return *this;
     }
@@ -55,7 +55,7 @@ public:
     template<class ...Args>
     LogBuffer& print(const char* format, Args... args)
     {
-        assert(!(_buf[0] != 0 && _wptr == _buf.data())); // means it has already been used as a plain buffer (with `str()`)
+        assert(!(_buf.at(0) != 0 && _wptr == _buf.data())); // means it has already been used as a plain buffer (with `str()`)
 
         auto cnt = std::snprintf(_wptr, capacity(), format, args...); // returns number of characters written if successful (not including '\0')
         if (cnt > 0)
@@ -130,9 +130,9 @@ inline void setGlobalLogger(clients::LogCallback cb)
  * E.g,
  *     KAFKA_API_LOG(Log::Level::Err, "something wrong happened! %s", detailedInfo.c_str());
  */
-#define KAFKA_API_LOG(level, ...) do {                                                                \
+#define KAFKA_API_LOG(level, ...) do {                                                              \
     std::call_once(GlobalLogger<>::initOnce, [](){ GlobalLogger<>::logCb = DefaultLogger; });       \
-    GlobalLogger<>::doLog(level, __FILE__, __LINE__, ##__VA_ARGS__);                               \
+    GlobalLogger<>::doLog(static_cast<int>(level), __FILE__, __LINE__, ##__VA_ARGS__);              \
 } while (0)
 
 

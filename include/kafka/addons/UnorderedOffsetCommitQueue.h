@@ -17,7 +17,7 @@ public:
     bool empty() const { return data.empty(); }
     std::size_t size() const { return data.size(); }
 
-    const T& front() const { return data[0]; }
+    const T& front() const { return data.at(0); }
 
     void push(const T& t)
     {
@@ -25,18 +25,18 @@ public:
 
         for (std::size_t indexCurrent = data.size() - 1; indexCurrent > 0;)
         {
-            const std::size_t indexParent = (indexCurrent + 1) / 2 - 1;
+            const std::size_t indexParent = ((indexCurrent + 1) / 2) - 1;
 
-            if (!(data[indexCurrent] < data[indexParent])) return;
+            if (!(data.at(indexCurrent) < data.at(indexParent))) return;
 
-            std::swap(data[indexCurrent], data[indexParent]);
+            std::swap(data.at(indexCurrent), data.at(indexParent));
             indexCurrent = indexParent;
         }
     }
 
     void pop_front()
     {
-        data[0] = data.back();
+        data.at(0) = data.back();
         data.pop_back();
 
         if (data.empty()) return;
@@ -48,11 +48,11 @@ public:
 
             if (indexLeftChild >= data.size()) return;
 
-            const std::size_t indexMinChild = (indexRightChild >= data.size() || data[indexLeftChild] < data[indexRightChild]) ? indexLeftChild : indexRightChild;
+            const std::size_t indexMinChild = (indexRightChild >= data.size() || data.at(indexLeftChild) < data.at(indexRightChild)) ? indexLeftChild : indexRightChild;
 
-            if (!(data[indexMinChild] < data[indexCurrent])) return;
+            if (!(data.at(indexMinChild) < data.at(indexCurrent))) return;
 
-            std::swap(data[indexCurrent], data[indexMinChild]);
+            std::swap(data.at(indexCurrent), data.at(indexMinChild));
             indexCurrent = indexMinChild;
         }
     }
@@ -141,9 +141,9 @@ public:
     /**
      * \brief Pop the offset which is ready for the consumer (if any).
      */
-    Optional<Offset> popOffsetToCommit()
+    std::optional<Offset> popOffsetToCommit()
     {
-        Optional<Offset> ret;
+        std::optional<Offset> ret;
         if (_committed != _toCommit)
         {
             ret = _committed = _toCommit;
@@ -154,9 +154,9 @@ public:
     /**
      * \brief Return the offset last popped.
      */
-    Optional<Offset> lastPoppedOffset()
+    std::optional<Offset> lastPoppedOffset()
     {
-        Optional<Offset> ret;
+        std::optional<Offset> ret;
         if (_committed != INVALID_OFFSET)
         {
             ret = _committed;

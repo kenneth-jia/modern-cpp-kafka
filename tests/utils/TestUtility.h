@@ -6,11 +6,11 @@
 
 #include "gtest/gtest.h"
 
-#include <boost/algorithm/string.hpp>
-
 #include <cstdlib>
+#include <errno.h>
 #include <functional>
 #include <list>
+#include <ranges>
 #include <regex>
 #include <signal.h>
 #include <vector>
@@ -77,7 +77,7 @@ PrintDividingLine(const std::string& description = "")
     std::cout << "---------------" << description << "---------------" << std::endl;
 }
 
-inline Optional<std::string>
+inline std::optional<std::string>
 GetEnvVar(const std::string& name)
 {
     if (const auto* value = getenv(name.c_str())) // NOLINT
@@ -85,7 +85,7 @@ GetEnvVar(const std::string& name)
         return std::string{value};
     }
 
-    return Optional<std::string>{};
+    return std::optional<std::string>{};
 }
 
 inline kafka::Properties
@@ -97,23 +97,22 @@ GetKafkaClientCommonConfig()
 
     kafka::Properties props;
     props.put("bootstrap.servers", *kafkaBrokerListEnv);
+    props.put(kafka::clients::Config::BROKER_ADDRESS_FAMILY, "v4");
 
     if (auto additionalSettingsEnv = GetEnvVar("KAFKA_CLIENT_ADDITIONAL_SETTINGS"))
     {
-        std::vector<std::string> keyValuePairs;
-        boost::algorithm::split(keyValuePairs, *additionalSettingsEnv, boost::is_any_of(";"));
-        for (const auto& keyValue: keyValuePairs)
+        auto subRanges = *additionalSettingsEnv | std::views::split(',');
+        for (auto subRange: subRanges)
         {
-            std::vector<std::string> kv;
-            boost::algorithm::split(kv, keyValue, boost::is_any_of("="));
+            auto kv = std::string_view(subRange) | std::views::split('=') | std::ranges::to<std::vector<std::string>>();
             EXPECT_EQ(2, kv.size());
             if (kv.size() == 2)
             {
-                props.put(kv[0], kv[1]);
+                props.put(kv.at(0), kv.at(1));
             }
             else
             {
-                std::cout << "Wrong setting: " << keyValue << std::endl;
+                std::cout << "Wrong setting: " << std::string_view(subRange) << std::endl;
             }
         }
     }
@@ -208,7 +207,7 @@ CreateKafkaTopic(const kafka::Topic& topic, int numPartitions, int replicationFa
 class JoiningThread {
 public:
     template <typename F, typename... Args>
-    explicit JoiningThread(F&& f, Args&&... args): _t(std::forward<F>(f), args...) {}
+    explicit JoiningThread(F&& f, Args&&... args): _t(std::forward<F>(f), std::forward<Args>(args)...) {}
     ~JoiningThread() { if (_t.joinable()) _t.join(); }
 private:
    std::thread _t;
@@ -226,20 +225,20 @@ getAllBrokersPids()
     std::vector<std::string> pidsString;
     if (auto kafkaBrokerPidsEnv = GetEnvVar("KAFKA_BROKER_PIDS"))
     {
-        boost::algorithm::split(pidsString, *kafkaBrokerPidsEnv, boost::is_any_of(","));
+        pidsString = *kafkaBrokerPidsEnv | std::views::split(',') | std::ranges::to<std::vector<std::string>>();
     }
 
     std::vector<int> pids;
-    std::for_each(pidsString.begin(), pidsString.end(), [&pids](const auto& s) { pids.push_back(std::stoi(s)); });
+    std::ranges::for_each(pidsString, [&pids](const auto& s) { pids.push_back(std::stoi(s)); });
     return pids;
 }
 
-#if !defined(WIN32)
+#ifndef WIN32
 inline void
 signalToAllBrokers(int sig)
 {
     auto pids = getAllBrokersPids();
-    std::for_each(pids.begin(), pids.end(), [sig](int pid) { kill(pid, sig); });
+    std::ranges::for_each(pids, [sig](int pid) { if (kill(pid, sig) == -1) std::cerr << "kill() failed! error: " << strerror(errno) << std::endl; }); // NOLINT
 
     if (sig == SIGSTOP)
     {
@@ -255,8 +254,8 @@ signalToAllBrokers(int sig)
 inline void
 PauseBrokers()
 {
-    constexpr int WAIT_AFTER_PAUSE_MS = 100;
-#if !defined(WIN32)
+    constexpr int WAIT_AFTER_PAUSE_MS = 500;
+#ifndef WIN32
     signalToAllBrokers(SIGSTOP);
 #else
     std::cerr << "[" << kafka::utility::getCurrentTime() << "] Can't pause brokers (doesn't support yet) on windows!"  << std::endl;
@@ -268,7 +267,7 @@ inline void
 ResumeBrokers()
 {
     constexpr int WAIT_AFTER_RESUME_SEC = 5;
-#if !defined(WIN32)
+#ifndef WIN32
     signalToAllBrokers(SIGCONT);
 #else
     std::cerr << "[" << kafka::utility::getCurrentTime() << "] Can't resume brokers (doesn't support yet) on windows!"  << std::endl;

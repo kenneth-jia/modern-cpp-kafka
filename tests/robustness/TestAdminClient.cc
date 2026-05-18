@@ -34,6 +34,8 @@ TEST(AdminClient, BrokersTimeout)
         {
             auto listResult = adminClient.listTopics(std::chrono::seconds(1));
             std::cout << "[" << kafka::utility::getCurrentTime() << "] ListTopics: result[" << listResult.error.message() << "]. Result: " << listResult.error.message() << std::endl;
+
+            KafkaTestUtility::DumpError(listResult.error);
             EXPECT_TRUE(listResult.error.value() == RD_KAFKA_RESP_ERR__TRANSPORT || listResult.error.value() == RD_KAFKA_RESP_ERR__TIMED_OUT);
             EXPECT_EQ(0, listResult.topics.size());
         }
@@ -67,7 +69,7 @@ TEST(AdminClient, BrokersTimeout)
         std::this_thread::sleep_for(std::chrono::seconds(1));
 
         auto listResult = adminClient.listTopics(std::chrono::seconds(1));
-        if (!listResult.error && listResult.topics.count(topic) == 1)
+        if (!listResult.error && listResult.topics.contains(topic))
             {
             auto metadata = adminClient.fetchBrokerMetadata(topic, std::chrono::seconds(5), false);
             std::cout << "[" << kafka::utility::getCurrentTime() << "] broker metadata: " << (metadata ? metadata->toString() : "NA") << std::endl;
@@ -87,7 +89,7 @@ TEST(AdminClient, BrokersTimeout)
             auto listResult = adminClient.listTopics();
             std::cout << "[" << kafka::utility::getCurrentTime() << "] ListTopics: result[" << listResult.error.message() << "]" << std::endl;
             EXPECT_FALSE(listResult.error);
-            EXPECT_EQ(1, listResult.topics.count(topic));
+            EXPECT_TRUE(listResult.topics.contains(topic));
         }
 
         // Fetch metadata, -- success
@@ -145,7 +147,7 @@ TEST(AdminClient, BrokersTimeout)
             auto listResult = adminClient.listTopics(std::chrono::seconds(1));
             std::cout << "[" << kafka::utility::getCurrentTime() << "] ListTopics: result[" << listResult.error.message() << "]" << std::endl;
             EXPECT_FALSE(listResult.error);
-            EXPECT_EQ(0, listResult.topics.count(topic));
+            EXPECT_FALSE(listResult.topics.contains(topic));
         }
     }
 }

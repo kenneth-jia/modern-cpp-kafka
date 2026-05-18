@@ -36,7 +36,7 @@ public:
      */
     const std::string& clientId() const
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         return _producer->clientId();
     }
@@ -46,7 +46,7 @@ public:
      */
     const std::string& name() const
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         return _producer->name();
     }
@@ -56,18 +56,20 @@ public:
      */
     void setLogLevel(int level)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         _properties.put(Config::LOG_LEVEL, std::to_string(level));
         _producer->setLogLevel(level);
     }
+
+    void setLogLevel(Log::Level level) { setLogLevel(static_cast<int>(level)); }
 
     /**
      * Return the properties which took effect.
      */
     const Properties& properties() const
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         return _producer->properties();
     }
@@ -75,9 +77,9 @@ public:
     /**
      * Fetch the effected property (including the property internally set by librdkafka).
      */
-    Optional<std::string> getProperty(const std::string& name) const
+    std::optional<std::string> getProperty(const std::string& name) const
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         return _producer->getProperty(name);
     }
@@ -86,11 +88,11 @@ public:
      * Fetch matadata from a available broker.
      * Note: the Metadata response information may trigger a re-join if any subscribed topic has changed partition count or existence state.
      */
-    Optional<BrokerMetadata> fetchBrokerMetadata(const std::string& topic,
+    std::optional<BrokerMetadata> fetchBrokerMetadata(const std::string& topic,
                                                  std::chrono::milliseconds timeout = std::chrono::milliseconds(KafkaClient::DEFAULT_METADATA_TIMEOUT_MS),
                                                  bool disableErrorLogging = false)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         return _producer->fetchBrokerMetadata(topic, timeout, disableErrorLogging);
     }
@@ -103,7 +105,7 @@ public:
      */
     Error flush(std::chrono::milliseconds timeout = InfiniteTimeout)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         return _producer->flush(timeout);
     }
@@ -113,7 +115,7 @@ public:
      */
     Error purge()
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         return _producer->purge();
     }
@@ -123,7 +125,7 @@ public:
      */
     void close(std::chrono::milliseconds timeout = InfiniteTimeout)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         _running = false;
         if (_pollThread.joinable()) _pollThread.join();
@@ -144,7 +146,7 @@ public:
      */
     producer::RecordMetadata syncSend(const producer::ProducerRecord& record)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         return _producer->syncSend(record);
     }
@@ -172,7 +174,7 @@ public:
               KafkaProducer::SendOption             option = KafkaProducer::SendOption::NoCopyRecordValue,
               KafkaProducer::ActionWhileQueueIsFull action = KafkaProducer::ActionWhileQueueIsFull::Block)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         _producer->send(record, deliveryCb, option, action);
     }
@@ -202,7 +204,7 @@ public:
               KafkaProducer::SendOption             option = KafkaProducer::SendOption::NoCopyRecordValue,
               KafkaProducer::ActionWhileQueueIsFull action = KafkaProducer::ActionWhileQueueIsFull::Block)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         _producer->send(record, deliveryCb, error, option, action);
     }
@@ -212,7 +214,7 @@ public:
      */
     void initTransactions(std::chrono::milliseconds timeout = InfiniteTimeout)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         _producer->initTransactions(timeout);
     }
@@ -222,7 +224,7 @@ public:
      */
     void beginTransaction()
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         _producer->beginTransaction();
     }
@@ -232,7 +234,7 @@ public:
      */
     void commitTransaction(std::chrono::milliseconds timeout = InfiniteTimeout)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         _producer->commitTransaction(timeout);
     }
@@ -242,7 +244,7 @@ public:
      */
     void abortTransaction(std::chrono::milliseconds timeout = InfiniteTimeout)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         _producer->abortTransaction(timeout);
     }
@@ -254,7 +256,7 @@ public:
                                   const consumer::ConsumerGroupMetadata& groupMetadata,
                                   std::chrono::milliseconds              timeout)
     {
-        const std::lock_guard<std::mutex> lock(_producerMutex);
+        const std::scoped_lock lock(_producerMutex);
 
         _producer->sendOffsetsToTransaction(topicPartitionOffsets, groupMetadata, timeout);
     }
@@ -277,7 +279,7 @@ private:
                 const std::string errStr = _fatalError->toString();
                 KAFKA_API_LOG(Log::Level::Notice, "met fatal error[%s], will re-initialize the internal producer", errStr.c_str());
 
-                const std::lock_guard<std::mutex> lock(_producerMutex);
+                const std::scoped_lock lock(_producerMutex);
 
                 if (!_running) return;
 

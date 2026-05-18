@@ -11,18 +11,18 @@ import os
 import shutil
 import glob
 import time
+import uuid
 from multiprocessing import Process
 from string import Template
 from collections import namedtuple
 
-ZOOKEEPER_SERVER_START_BIN = 'zookeeper-server-start.sh'
 KAFKA_SERVER_START_BIN = 'kafka-server-start.sh'
 
 
 ################################################################################
 
-zookeeperPids = []
-kafkaPids = []
+controllerPids = []
+brokerPids = []
 
 class ProcessPool(object):
     def __init__(self):
@@ -37,10 +37,10 @@ class ProcessPool(object):
                              stdout=out,
                              stderr=err)
 
-        if 'kafka' in name:
-            kafkaPids.append(p.pid)
-        else:
-            zookeeperPids.append(p.pid)
+        if 'controller' in name:
+            controllerPids.append(p.pid)
+        elif 'broker' in name:
+            brokerPids.append(p.pid)
 
         self.processList.append((p, name))
 
@@ -67,54 +67,95 @@ class ProcessPool(object):
 
 processPool=ProcessPool()
 
+
+
+def executeCommand(cmd):
+    cmdResult = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if cmdResult.returncode == 0:
+        print(f"[OK] {cmd}")
+        return cmdResult.stdout
+    else:
+        print(f"[Failed] {cmd}")
+        print(cmdResult.stderr)
+
+
 ################################################################################
 
-def GenerateZookeeperConfig(zookeeperPort, dataDir):
-    zookeeperTemplate = Template('''
-        admin.enableServer=false
-        dataDir=${data_dir}
-        clientPort=${port}
-    ''')
-    properties = zookeeperTemplate.substitute(data_dir=dataDir, port=zookeeperPort)
-    return properties
-
-def GenerateBrokerConfig(brokerId, brokerPort, zookeeperPort, logDir):
-    brokerTemplate = Template('''
-        broker.id=${broker_id}
-        listeners=PLAINTEXT://127.0.0.1:${listener_port}
-        log.dirs=${log_dir}
-        zookeeper.connect=127.0.0.1:${zookeeper_port}
-        num.partitions=5
-        default.replication.factor=3
+def generateControllerConfig(nodeId, port, logDir):
+    return f'''
+        process.roles=controller
+        node.id={nodeId}
+        controller.quorum.bootstrap.servers=localhost:{port}
+        listeners=CONTROLLER://:{port}
+        advertised.listeners=CONTROLLER://localhost:{port}
+        controller.listener.names=CONTROLLER
+        num.network.threads=3
+        num.io.threads=8
+        socket.send.buffer.bytes=102400
+        socket.receive.buffer.bytes=102400
+        socket.request.max.bytes=104857600
+        log.dirs={logDir}
+        num.partitions=1
+        num.recovery.threads.per.data.dir=2
         offsets.topic.replication.factor=3
-        offsets.commit.timeout.ms=10000
-        unclean.leader.election.enable=false
         min.insync.replicas=2
+        transaction.state.log.replication.factor=3
+        transaction.state.log.min.isr=2
+        share.coordinator.state.topic.replication.factor=3
+        share.coordinator.state.topic.min.isr=2
+        log.retention.hours=168
+        log.segment.bytes=1073741824
+        log.retention.check.interval.ms=300000
+    '''
+
+
+def generateBrokerConfig(nodeId, port, controllerPort, logDir):
+    return f'''
+        process.roles=broker
+        node.id={nodeId}
+        controller.quorum.bootstrap.servers=localhost:{controllerPort}
+        listeners=PLAINTEXT://localhost:{port}
+        inter.broker.listener.name=PLAINTEXT
+        advertised.listeners=PLAINTEXT://localhost:{port}
+        controller.listener.names=CONTROLLER
+        listener.security.protocol.map=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL,SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_SSL:SASL_SSL
+        num.network.threads=3
+        num.io.threads=8
+        socket.send.buffer.bytes=102400
+        socket.receive.buffer.bytes=102400
+        socket.request.max.bytes=104857600
+        log.dirs={logDir}
+        num.partitions=1
+        num.recovery.threads.per.data.dir=2
+        offsets.topic.replication.factor=3
+        min.insync.replicas=2
+        transaction.state.log.replication.factor=3
+        transaction.state.log.min.isr=2
+        share.coordinator.state.topic.replication.factor=3
+        share.coordinator.state.topic.min.isr=2
+        log.retention.hours=168
+        log.segment.bytes=1073741824
+        log.retention.check.interval.ms=300000
         auto.create.topics.enable=false
-    ''')
-    properties = brokerTemplate.substitute(broker_id=brokerId, listener_port=brokerPort, zookeeper_port=zookeeperPort, log_dir=logDir)
-    return properties
+    '''
 
 ################################################################################
 
-def StartZookeeperServer(name, propFile, outDir):
-    cmd = '{0} {1}'.format(ZOOKEEPER_SERVER_START_BIN, propFile)
-    processPool.addProcess(cmd, name, os.path.join(outDir, name+'.out'), os.path.join(outDir, name+'.err'))
-
-def StartKafkaServer(name, propFile, outDir):
+def startServer(name, propFile, outDir):
     cmd = '{0} {1}'.format(KAFKA_SERVER_START_BIN, propFile)
     processPool.addProcess(cmd, name, os.path.join(outDir, name+'.out'), os.path.join(outDir, name+'.err'))
 
 ################################################################################
 
 def main():
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--zookeeper-port', help='The port for zookeeper', required=True)
-    parser.add_argument('--broker-ports', nargs='+', help='The ports for kafka brokers', required=True)
-    parser.add_argument('--temp-dir', help='The location for kafka/zookeeper log files, console printout, etc', required=True)
+    parser.add_argument('--controller-port', help='The port for Kafka controller', required=True)
+    parser.add_argument('--broker-ports', nargs='+', help='The ports for Kafka brokers', required=True)
+    parser.add_argument('--temp-dir', help='The location for log files, printout, etc', default=f"{os.path.join(os.getcwd(), 'tmp')}")
     parsed = parser.parse_args()
 
-    zookeeperPort = parsed.zookeeper_port
+    controllerPort = parsed.controller_port
     brokerPorts   = parsed.broker_ports
 
     if os.path.exists(parsed.temp_dir):
@@ -123,30 +164,41 @@ def main():
     logDir  = os.path.join(parsed.temp_dir, 'log')
     outDir  = os.path.join(parsed.temp_dir, 'out')
     propDir = os.path.join(parsed.temp_dir, 'properties')
+    os.makedirs(logDir)
+    os.makedirs(outDir)
+    os.makedirs(propDir)
 
     PropFile = namedtuple('PropertiesFile', 'filename context')
 
     # Generate properties files
-    zookeeperPropFiles = []
-    zookeeperPropFiles.append(PropFile(os.path.join(propDir, 'zookeeper.properties'), GenerateZookeeperConfig(zookeeperPort, os.path.join(logDir, 'zookeeper'))))
-    kafkaPropFiles = []
+    controllerPropFiles = []
+    controllerLogDir = os.path.join(logDir, 'controller')
+    controllerPropFiles.append(PropFile(os.path.join(propDir, 'controller.properties'), generateControllerConfig(10, controllerPort, controllerLogDir)))
+
+    executeCommand(f"mkdir {controllerLogDir}")
+
+    brokerPropFiles = []
     for (i, brokerPort) in enumerate(brokerPorts):
-        kafkaPropFiles.append(PropFile(os.path.join(propDir, 'kafka{0}.properties'.format(i)), GenerateBrokerConfig(i, brokerPort, zookeeperPort, os.path.join(logDir, 'kafka{0}'.format(i)))))
+        nodeId = i+1
+        brokerPropFiles.append(PropFile(os.path.join(propDir, f"broker{nodeId}.properties"), generateBrokerConfig(nodeId, brokerPort, controllerPort, os.path.join(logDir, f"broker{nodeId}"))))
 
-    os.makedirs(propDir)
-    for propFile in (set(zookeeperPropFiles) | set(kafkaPropFiles)):
+    randomUuid = str(uuid.uuid4())
+
+    for propFile in (set(controllerPropFiles) | set(brokerPropFiles)):
         with open(propFile.filename, 'w') as f:
-              f.write(propFile.context)
+            f.write(propFile.context)
 
-    os.makedirs(outDir)
+        executeCommand(f"kafka-storage.sh format {'--standalone' if 'controller' in propFile.filename else ''} -t {randomUuid} -c {propFile.filename}")
 
-    StartZookeeperServer('zookeeper', zookeeperPropFiles[0].filename, outDir)
+
+    startServer('controller', controllerPropFiles[0].filename, outDir)
 
     time.sleep(5)
 
     for (i, brokerPort) in enumerate(brokerPorts):
-        StartKafkaServer('kafka{0}'.format(i), kafkaPropFiles[i].filename, outDir)
+        startServer('broker{0}'.format(i), brokerPropFiles[i].filename, outDir)
 
+    time.sleep(5)
     MAX_RETRY = 60
     retry = 0
     while retry < MAX_RETRY:
@@ -154,20 +206,22 @@ def main():
         kafkaBrokerPids = []
 
         for brokerPort in brokerPorts:
-            cmd = 'lsof -nP -iTCP:{0} | grep LISTEN'.format(brokerPort)
-            cmdCall = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            (out, err) = cmdCall.communicate();
-            matched = re.search(r'[^\s-]+ +([0-9]+) +.*', out.decode('utf-8'))
-            if matched:
-                kafkaBrokerPids.append(matched.group(1))
+            if output := executeCommand(f"lsof -nP -iTCP:{brokerPort} | grep LISTEN"):
+                matched = re.search(r'[^\s-]+ +([0-9]+) +.*', output)
+                if matched:
+                    kafkaBrokerPids.append(matched.group(1))
+
+        print(f"brokerpids: {kafkaBrokerPids}")
 
         if len(kafkaBrokerPids) != len(brokerPorts):
             retry += 1
             continue
 
         with open(r'test.env', 'w') as envFile:
-            envFile.write('export KAFKA_BROKER_LIST={0}\n'.format(','.join(['127.0.0.1:{0}'.format(port) for port in brokerPorts])))
-            envFile.write('export KAFKA_BROKER_PIDS={0}\n'.format(','.join([pid for pid in kafkaBrokerPids])))
+            envStr = f"export KAFKA_BROKER_LIST={','.join(['127.0.0.1:{0}'.format(port) for port in brokerPorts])}\n"
+            envStr += f"export KAFKA_BROKER_PIDS={','.join([pid for pid in kafkaBrokerPids])}\n"
+            print(f"Output to test.env:\n{envStr}\n")
+            envFile.write(envStr)
             break
 
     if retry < MAX_RETRY:

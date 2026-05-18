@@ -42,11 +42,7 @@ using Headers = std::vector<Header>;
 /**
  * Null Headers.
  */
-#if COMPILER_SUPPORTS_CPP_17
 const inline Headers NullHeaders = Headers{};
-#else
-const static Headers NullHeaders = Headers{};
-#endif
 
 /**
  * Obtains explanatory string for Headers.
@@ -54,10 +50,10 @@ const static Headers NullHeaders = Headers{};
 inline std::string toString(const Headers& headers)
 {
     std::string ret;
-    std::for_each(headers.cbegin(), headers.cend(),
-                  [&ret](const auto& header) {
-                      ret.append(ret.empty() ? "" : ",").append(header.toString());
-                  });
+    std::ranges::for_each(headers,
+                          [&ret](const auto& header) {
+                              ret.append(ret.empty() ? "" : ",").append(header.toString());
+                          });
     return ret;
 }
 

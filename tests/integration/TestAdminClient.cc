@@ -34,33 +34,33 @@ TEST(AdminClient, CreateListDeleteTopics)
 
         // Check the topic list
         auto listResult = adminClient.listTopics();
-        auto foundAllTopics = std::all_of(topics.cbegin(), topics.cend(),
-                                          [&listResult](const kafka::Topic& topic) {
-                                              const bool ret = (listResult.topics.count(topic) == 1);
-                                              if (!ret) {
-                                                  std::cout << "[" << kafka::utility::getCurrentTime() << "] can't find topic " << topic << " by now!" << std::endl;
-                                              }
-                                              return ret;
-                                          });
+        auto foundAllTopics = std::ranges::all_of(topics,
+                                                  [&listResult](const kafka::Topic& topic) {
+                                                      const bool ret = listResult.topics.contains(topic);
+                                                      if (!ret) {
+                                                          std::cout << "[" << kafka::utility::getCurrentTime() << "] can't find topic " << topic << " by now!" << std::endl;
+                                                      }
+                                                      return ret;
+                                                  });
         if (!foundAllTopics) continue;
 
         // Check metadata
-        auto foundAllMetadatas = std::all_of(topics.cbegin(), topics.cend(),
-                                             [&adminClient, numPartitions, replicaFactor](const kafka::Topic& topic) {
-                                                 if (auto metadata = adminClient.fetchBrokerMetadata(topic)) {
-                                                     auto partitions = metadata->partitions();
-                                                     EXPECT_EQ(numPartitions, partitions.size());
-                                                     for (const auto& partitionInfo: partitions) {
-                                                         EXPECT_EQ(replicaFactor, partitionInfo.second.replicas.size());
-                                                     }
+        auto foundAllMetadatas = std::ranges::all_of(topics,
+                                                     [&adminClient, numPartitions, replicaFactor](const kafka::Topic& topic) {
+                                                         if (auto metadata = adminClient.fetchBrokerMetadata(topic)) {
+                                                             auto partitions = metadata->partitions();
+                                                             EXPECT_EQ(numPartitions, partitions.size());
+                                                             for (const auto& partitionInfo: partitions) {
+                                                                 EXPECT_EQ(replicaFactor, partitionInfo.second.replicas.size());
+                                                             }
 
-                                                     std::cout << "[" << kafka::utility::getCurrentTime() << "] BrokerMetadata: " << metadata->toString() << std::endl;
-                                                     return true;
-                                                 }
+                                                             std::cout << "[" << kafka::utility::getCurrentTime() << "] BrokerMetadata: " << metadata->toString() << std::endl;
+                                                             return true;
+                                                         }
 
-                                                 std::cout << "[" << kafka::utility::getCurrentTime() << "] can't find metadata for topic " << topic << " by now!" << std::endl;
-                                                 return false;
-                                             });
+                                                         std::cout << "[" << kafka::utility::getCurrentTime() << "] can't find metadata for topic " << topic << " by now!" << std::endl;
+                                                         return false;
+                                                     });
         if (!foundAllMetadatas) continue;
 
         areTopicsSuccessfullyCreated = true;
@@ -128,9 +128,9 @@ TEST(AdminClient, DeleteRecords)
     std::cout << "[" << kafka::utility::getCurrentTime() << "] " << adminClient.name() << " started" << std::endl;
 
     // Prepare offsets for `deleteRecords`
-    auto offsetOption1 = metadatas1[0].offset();
-    auto offsetOption2 = metadatas2[1].offset();
-    auto offsetOption3 = metadatas3[2].offset();
+    auto offsetOption1 = metadatas1.at(0).offset();
+    auto offsetOption2 = metadatas2.at(1).offset();
+    auto offsetOption3 = metadatas3.at(2).offset();
     ASSERT_TRUE(offsetOption1);
     ASSERT_TRUE(offsetOption2);
     ASSERT_TRUE(offsetOption3);
@@ -169,8 +169,8 @@ TEST(AdminClient, DeleteRecords)
         {
             for (std::size_t i = 0; i < records.size(); ++i)
             {
-                EXPECT_EQ(std::get<1>(messages[i]), records[i].key().toString());
-                EXPECT_EQ(std::get<2>(messages[i]), records[i].value().toString());
+                EXPECT_EQ(std::get<1>(messages.at(i)), records.at(i).key().toString());
+                EXPECT_EQ(std::get<2>(messages.at(i)), records.at(i).value().toString());
             }
         }
     }
@@ -189,8 +189,8 @@ TEST(AdminClient, DeleteRecords)
         {
             for (std::size_t i = 0; i < records.size(); ++i)
             {
-                EXPECT_EQ(std::get<1>(messages[i + 1]), records[i].key().toString());
-                EXPECT_EQ(std::get<2>(messages[i + 1]), records[i].value().toString());
+                EXPECT_EQ(std::get<1>(messages.at(i + 1)), records.at(i).key().toString());
+                EXPECT_EQ(std::get<2>(messages.at(i + 1)), records.at(i).value().toString());
             }
         }
     }

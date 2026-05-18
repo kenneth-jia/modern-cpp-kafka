@@ -7,9 +7,9 @@ on:
       - main
 
 env:
-  KAFKA_SRC_LINK: https://archive.apache.org/dist/kafka/3.3.1/kafka_2.13-3.3.1.tgz
+  KAFKA_SRC_LINK: https://www.apache.org/dyn/closer.lua/kafka/4.2.0/kafka_2.13-4.2.0.tgz?action=download
   CPU_CORE_NUM:   2
-  LIBRDKAFKA_TAG: v2.4.0
+  LIBRDKAFKA_TAG: v2.14.1
   BUILD_SUB_DIR:  builds/sub-build
 
 jobs:
@@ -30,69 +30,29 @@ jobs:
     strategy:
       matrix:
         include:
-          - os:                macos-12
-            build-cxx:         clang++
-            test-labels:       unit|integration
-            enable-ut-stubs:   true
+        - os:                macos-26
+          build-cxx:         clang++
+          build-type:        Debug
+          test-labels:       unit|integration
+          check-option:      clang-tidy
+          enable-ut-stubs:   true
 
-          - os:                macos-12
-            build-cxx:         clang++
-            test-labels:       robustness
+        - os:                macos-26
+          build-cxx:         clang++
+          build-type:        Release
+          test-labels:       robustness
 
-          - os:                macos-12
-            build-cxx:         clang++
-            check-option:      clang-tidy
+        - os:                ubuntu-24.04
+          build-cxx:         g++
+          build-type:        Debug
+          check-option:      asan,ubsan
+          test-labels:       unit|integration
+          enable-ut-stubs:   true
 
-          - os:                ubuntu-22.04
-            build-cxx:         g++
-            build-type:        Debug
-            test-labels:       unit|integration
-            enable-ut-stubs:   true
-
-          - os:                ubuntu-24.04
-            build-cxx:         g++
-            build-type:        Release
-            test-labels:       robustness
-
-          - os:                ubuntu-24.04
-            build-cxx:         g++
-            build-type:        Release
-            cxx-standard:      14
-            test-labels:       unit|integration
-
-          - os:                ubuntu-24.04
-            build-cxx:         g++
-            check-option:      asan
-            test-labels:       unit|integration
-
-          - os:                ubuntu-24.04
-            build-cxx:         g++
-            check-option:      tsan
-            test-labels:       unit|integration
-
-          - os:                ubuntu-24.04
-            build-cxx:         g++
-            check-option:      ubsan
-            test-labels:       unit|integration
-
-          - os:                ubuntu-24.04
-            build-cxx:         clang++
-            test-labels:       unit|integration
-            generate-doc:      true
-            with-installation: true
-
-          - os:                ubuntu-24.04
-            build-cxx:         clang++
-            check-option:      clang-tidy
-            enable-ut-stubs:   true
-
-          - os:                ubuntu-22.04
-            build-cxx:         g++
-            test-labels:       unit|integration
-
-          - os:                ubuntu-22.04
-            build-cxx:         clang++
-            test-labels:       robustness
+        - os:                ubuntu-24.04
+          build-cxx:         g++
+          check-option:      tsan
+          test-labels:       robustness
 
     steps:
       - uses: actions/checkout@v3
@@ -112,67 +72,90 @@ jobs:
           mkdir -p ${BUILD_SUB_DIR}
           cd ${BUILD_SUB_DIR}
 
-          # 1. Install clang/clang-tidy
+          # Install clang/clang-tidy
           if [[ ${CHECK_OPTION} == 'clang-tidy' ]]; then
             if [[ ${OS_VERSION} == 'ubuntu'* ]]; then
               sudo apt install -y clang-tidy
             elif [[ ${OS_VERSION} == 'macos'* ]]; then
               brew install llvm
-              export PATH=/usr/local/opt/llvm/bin/:$PATH
+              export PATH=/opt/homebrew/opt/llvm/bin:$PATH
+              clang-tidy --version
             fi
           fi
 
-          # 2. Install googletest (v1.11.0)
-          wget -nv https://github.com/google/googletest/archive/refs/tags/release-1.11.0.tar.gz
-          tar -xzf release-1.11.0.tar.gz
-          cd googletest-release-1.11.0
-          env CXX=${BUILD_CXX} cmake ./
-          make -j${CPU_CORE_NUM} && sudo make install
-          cd ../
-
-          # 3. Install boost lib
-          if [[ ${OS_VERSION} == 'ubuntu'* ]]; then
-            sudo apt install -y libboost-all-dev
-          elif [[ ${OS_VERSION} == 'macos'* ]]; then
-            brew install boost
+          # Install g++ (newer version), clang
+          if [[ ${OS_VERSION} == 'ubuntu-24.04' ]]; then
+            if [[ ${BUILD_CXX} == 'g++' ]]; then
+              sudo apt install -y gcc-14 g++-14
+              sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+              sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
+              sudo update-alternatives --set gcc /usr/bin/gcc-14
+              sudo update-alternatives --set g++ /usr/bin/g++-14
+              g++ --version
+            elif [[ ${BUILD_CXX} == 'clang++' ]]; then
+              sudo apt install -y clang-20 libc++-20-dev libc++abi-20-dev
+              sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-20 100
+              sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-20 100
+              clang++ --version
+            fi
           fi
 
-          # 4. Install librdkafka
+          # Install CMake
+          if [[ ${OS_VERSION} == 'ubuntu'* ]]; then
+              sudo apt install -y cmake
+          fi
+
+          # Install googletest
+          if [[ ${OS_VERSION} == 'ubuntu'* ]]; then
+            sudo apt install -y libgtest-dev
+            pushd /usr/src/gtest
+            sudo mkdir build
+            cd build
+            sudo cmake ..
+            sudo make
+            sudo cp lib/libgtest*.a /usr/lib
+            popd
+          elif [[ ${OS_VERSION} == 'macos'* ]]; then
+            brew install googletest
+          fi
+
+          # Install librdkafka
           git clone https://github.com/edenhill/librdkafka.git
+          pwd
           cd librdkafka
           git reset --hard ${LIBRDKAFKA_TAG}
           ./configure --cxx=${BUILD_CXX}
           make -j${CPU_CORE_NUM} && sudo make install
           cd ../
 
-          # 5. Install rapidjson (for `addons/KafkaMetrics.h`)
-          if [[ ${OS_VERSION} == 'ubuntu'* ]]; then
-            sudo apt install -y rapidjson-dev
-          else
-            wget -nv https://github.com/Tencent/rapidjson/archive/refs/tags/v1.1.0.tar.gz
-            tar -xzf v1.1.0.tar.gz
-          fi
+          # Install rapidjson (for `addons/KafkaMetrics.h`)
+          wget https://github.com/Tencent/rapidjson/archive/refs/heads/master.zip -O rapidjson-master.zip
+          unzip rapidjson-master.zip
+          sudo cp -r rapidjson-master/include/rapidjson /usr/local/include
 
-          # 6. Install tools to generate document
+          # Install tools to generate document
           if [ ${GENERATE_DOC} ]; then
             sudo apt install -y python3-markdown
             sudo apt install -y doxygen
           fi
 
-          # 6. Install Jre, Kafka for integration/regression tests
+          # Install Jre, Kafka for integration/regression tests
           if [[ ${TEST_LABELS} == *'integration'* ]] || [[ ${TEST_LABELS} == *'robustness'* ]]; then
-            # Install Jre
-            if [[ ${OS_VERSION} == 'ubuntu-22.04' ]]; then
-              sudo apt install -y openjdk-18-jre
+            # Install Jre, lsof
+            if [[ ${OS_VERSION} == 'ubuntu'* ]]; then
+              sudo apt install -y default-jre
+              java -version
+
+              sudo apt install -y lsof
             fi
 
             # Install kafka
             time wget -nv ${KAFKA_SRC_LINK}
-            tar -xzf `basename ${KAFKA_SRC_LINK}`
-            export PATH=`pwd`/`basename ${KAFKA_SRC_LINK} .tgz`/bin:$PATH
+            mkdir -p kafka && tar -xzf `basename ${KAFKA_SRC_LINK}` -C kafka --strip-components=1
+            export PATH=`pwd`/kafka/bin:$PATH
           fi
 
-          # 7. Install gtest-parallel for integration test
+          # Install gtest-parallel for integration test
           if [[ ${TEST_LABELS} == *'integration'* ]]; then
             wget https://github.com/google/gtest-parallel/archive/refs/heads/master.zip
             unzip master.zip
@@ -208,19 +191,19 @@ jobs:
             export BUILD_OPTION="${BUILD_OPTION} -DBUILD_OPTION_ENABLE_UT_STUBS=ON"
           fi
 
-          if [[ ${CHECK_OPTION} == 'clang-tidy' ]]; then
+          if [[ ${CHECK_OPTION} == *'clang-tidy'* ]]; then
             export BUILD_OPTION="${BUILD_OPTION} -DBUILD_OPTION_CLANG_TIDY=ON"
           fi
 
-          if [[ ${CHECK_OPTION} == 'asan' ]]; then
+          if [[ ${CHECK_OPTION} == *'asan'* ]]; then
             export BUILD_OPTION="${BUILD_OPTION} -DBUILD_OPTION_USE_ASAN=ON"
           fi
 
-          if [[ ${CHECK_OPTION} == 'tsan' ]]; then
+          if [[ ${CHECK_OPTION} == *'tsan'* ]]; then
             export BUILD_OPTION="${BUILD_OPTION} -DBUILD_OPTION_USE_TSAN=ON"
           fi
 
-          if [[ ${CHECK_OPTION} == *"ubsan" ]]; then
+          if [[ ${CHECK_OPTION} == *"ubsan"* ]]; then
             export BUILD_OPTION="${BUILD_OPTION} -DBUILD_OPTION_USE_UBSAN=ON"
           fi
 
@@ -228,9 +211,6 @@ jobs:
             export BUILD_OPTION="${BUILD_OPTION} -DBUILD_OPTION_GEN_DOC=ON"
           fi
 
-          if [ -d "rapidjson-1.1.0" ]; then
-            export RAPIDJSON_INCLUDE_DIRS=`pwd`/rapidjson-1.1.0/include
-          fi
           env CXX=${BUILD_CXX} cmake ../.. ${CMAKE_CXX_STANDARD} ${CMAKE_BUILD_TYPE} ${BUILD_OPTION}
 
       - name: Build
@@ -255,24 +235,29 @@ jobs:
           # Restore the PATH from environment file
           export PATH=${{ env.PATH }}
 
-          # Start Kafka cluster
-          rm -f test.env
-          ../../scripts/start-local-kafka-cluster.py --zookeeper-port 42181 --broker-ports 40091 40092 40093 --temp-dir ./tmp &
+          # Setup Kafka cluster for integration test & regression test
+          if [[ ${TEST_LABELS} == *'integration'* ]] || [[ ${TEST_LABELS} == *'robustness'* ]]; then
+            # Start Kafka cluster
+            rm -f test.env
+            ../../scripts/start-local-kafka-cluster.py --controller-port 42181 --broker-ports 40091 40092 40093 &
 
-          # Wait server to be ready
-          for i in {1..60}; do cat test.env 2>/dev/null && break || sleep 1; done
+            # Wait server to be ready
+            for i in {1..60}; do cat test.env 2>/dev/null && break || sleep 1; done
 
-          # Set the environment variables: KAFKA_BROKER_LIST, KAFKA_BROKER_PIDS
-          source test.env
+            # Set the environment variables: KAFKA_BROKER_LIST, KAFKA_BROKER_PIDS
+            source test.env
+
+            cat test.env
+            ps aux | grep kafka
+          fi
 
           # Run tests
           ctest -VV -L "${TEST_LABELS}"
 
           # Stop Kafka cluster for integration test & regression test
           if [[ ${TEST_LABELS} == *'integration'* ]] || [[ ${TEST_LABELS} == *'robustness'* ]]; then
-            # Stop kafka cluster
+            # Stop Kafka cluster
             kafka-server-stop.sh
-            zookeeper-server-stop.sh
           fi
 
   kafka-api-tests-windows:
@@ -303,14 +288,6 @@ jobs:
           cp -v "C:\VCPKG\INSTALLED\x64-windows\lib\manual-link\gtest_main*" "C:\VCPKG\INSTALLED\x64-windows\lib\"
           cp -v "C:\VCPKG\INSTALLED\x64-windows\lib\manual-link\gtest_main*" "C:\VCPKG\INSTALLED\x64-windows\lib\"
 
-          # Install boost headers/libraries
-          vcpkg install boost-optional
-          vcpkg install boost-algorithm
-          vcpkg install boost-program-options
-
-          ls  "C:\VCPKG\INSTALLED\x64-windows\lib"
-          cp -v "C:\VCPKG\INSTALLED\x64-windows\lib\boost_program_options-vc144-mt-x64-1_85.lib" "C:\VCPKG\INSTALLED\x64-windows\lib\boost_program_options.lib"
-
           # Install rapidjson
           vcpkg install rapidjson
 
@@ -321,7 +298,6 @@ jobs:
           cd $Env:BUILD_SUB_DIR
 
           $Env:GTEST_ROOT='C:\VCPKG\INSTALLED\x64-windows\'
-          $Env:BOOST_ROOT='C:\VCPKG\INSTALLED\x64-windows\'
           $Env:LIBRDKAFKA_INCLUDE_DIR='C:\VCPKG\INSTALLED\x64-windows\include\'
           $Env:LIBRDKAFKA_LIBRARY_DIR='C:\VCPKG\INSTALLED\x64-windows\lib\'
           $Env:RAPIDJSON_INCLUDE_DIRS='C:\VCPKG\INSTALLED\x64-windows\include\'
@@ -341,8 +317,8 @@ jobs:
           tree "tests"
 
           # Install kafka
-          Invoke-WebRequest -Uri $Env:KAFKA_SRC_LINK -OutFile kafka_2.13-2.8.1.tgz
-          tar xvzf kafka_2.13-2.8.1.tgz
+          Invoke-WebRequest -Uri $Env:KAFKA_SRC_LINK -OutFile kafka_2.13-4.2.0.tgz
+          tar xvzf kafka_2.13-4.2.0.tgz
 
           ctest -VV -L $Env:TEST_LABELS
 

@@ -63,11 +63,7 @@ private:
     static std::list<Error> getPerTopicPartitionResults(const rd_kafka_topic_partition_list_t* partitionResults);
     static Error combineErrors(const std::list<Error>& errors);
 
-#if COMPILER_SUPPORTS_CPP_17
-    static constexpr int DEFAULT_COMMAND_TIMEOUT_MS = 30000;
-#else
-    enum { DEFAULT_COMMAND_TIMEOUT_MS = 30000 };
-#endif
+static constexpr int DEFAULT_COMMAND_TIMEOUT_MS = 30000;
 };
 
 
@@ -110,12 +106,12 @@ AdminClient::combineErrors(const std::list<Error>& errors)
     if (!errors.empty())
     {
         std::string detailedMsg;
-        std::for_each(errors.cbegin(), errors.cend(),
-                      [&detailedMsg](const auto& error) {
-                          if (!detailedMsg.empty()) detailedMsg += "; ";
+        std::ranges::for_each(errors,
+                              [&detailedMsg](const auto& error) {
+                                  if (!detailedMsg.empty()) detailedMsg += "; ";
 
-                          detailedMsg += error.message();
-                      });
+                                  detailedMsg += error.message();
+                              });
 
         return  Error{static_cast<rd_kafka_resp_err_t>(errors.front().value()), detailedMsg};
     }

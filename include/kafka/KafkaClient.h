@@ -49,6 +49,7 @@ public:
      * Set log level for the kafka client (the default value: 5).
      */
     void setLogLevel(int level);
+    void setLogLevel(Log::Level level) { setLogLevel(static_cast<int>(level)); }
 
     /**
      * Return the properties which took effect.
@@ -58,7 +59,7 @@ public:
     /**
      * Fetch the effected property (including the property internally set by librdkafka).
      */
-    Optional<std::string> getProperty(const std::string& name) const;
+    std::optional<std::string> getProperty(const std::string& name) const;
 
     /**
      * Call the OffsetCommit callbacks (if any)
@@ -73,9 +74,9 @@ public:
      * Fetch matadata from a available broker.
      * Note: the Metadata response information may trigger a re-join if any subscribed topic has changed partition count or existence state.
      */
-    Optional<BrokerMetadata> fetchBrokerMetadata(const std::string& topic,
-                                                 std::chrono::milliseconds timeout = std::chrono::milliseconds(DEFAULT_METADATA_TIMEOUT_MS),
-                                                 bool disableErrorLogging = false);
+    std::optional<BrokerMetadata> fetchBrokerMetadata(const std::string& topic,
+                                                      std::chrono::milliseconds timeout = std::chrono::milliseconds(DEFAULT_METADATA_TIMEOUT_MS),
+                                                      bool disableErrorLogging = false);
 
     template<class ...Args>
     void doLog(int level, const char* filename, int lineno, const char* format, Args... args) const
@@ -93,13 +94,9 @@ public:
         doLog(level, filename, lineno, "%s", msg);
     }
 
-#define KAFKA_API_DO_LOG(lvl, ...) doLog(lvl, __FILE__, __LINE__, ##__VA_ARGS__)
+#define KAFKA_API_DO_LOG(lvl, ...) doLog(static_cast<int>(lvl), __FILE__, __LINE__, ##__VA_ARGS__)
 
-#if COMPILER_SUPPORTS_CPP_17
-    static constexpr int DEFAULT_METADATA_TIMEOUT_MS = 10000;
-#else
-    enum { DEFAULT_METADATA_TIMEOUT_MS = 10000 };
-#endif
+static constexpr int DEFAULT_METADATA_TIMEOUT_MS = 10000;
 
 protected:
     // There're 3 derived classes: KafkaConsumer, KafkaProducer, AdminClient
@@ -145,17 +142,13 @@ protected:
     // Accepted properties
     Properties _properties;
 
-#if COMPILER_SUPPORTS_CPP_17
-    static constexpr int EVENT_POLLING_INTERVAL_MS = 100;
-#else
-    enum { EVENT_POLLING_INTERVAL_MS  = 100 };
-#endif
+static constexpr int EVENT_POLLING_INTERVAL_MS = 100;
 
 private:
     std::string         _clientId;
     std::string         _clientName;
 
-    std::atomic<int>    _logLevel = {Log::Level::Notice};
+    std::atomic<int>    _logLevel = static_cast<int>(Log::Level::Notice);
 
     LogCallback                     _logCb = DefaultLogger;
     StatsCallback                   _statsCb;
@@ -321,7 +314,7 @@ KafkaClient::KafkaClient(ClientType                     clientType,
             KAFKA_THROW_ERROR(Error(RD_KAFKA_RESP_ERR__INVALID_ARG, std::string("Invalid log_level[").append(*logLevel).append("], which must be an number!").append(e.what())));
         }
 
-        if (_logLevel < Log::Level::Emerg || _logLevel > Log::Level::Debug)
+        if (_logLevel < static_cast<int>(Log::Level::Emerg) || _logLevel > static_cast<int>(Log::Level::Debug))
         {
             KAFKA_THROW_ERROR(Error(RD_KAFKA_RESP_ERR__INVALID_ARG, std::string("Invalid log_level[").append(*logLevel).append("], which must be a value between 0 and 7!")));
         }
@@ -355,7 +348,7 @@ KafkaClient::KafkaClient(ClientType                     clientType,
         if (!v) continue;
 
         // Those private properties are only available for `C++ wrapper`, not for librdkafka
-        if (PRIVATE_PROPERTY_KEYS.count(prop.first))
+        if (PRIVATE_PROPERTY_KEYS.contains(prop.first))
         {
             _properties.put(prop.first, prop.second);
             continue;
@@ -466,7 +459,7 @@ KafkaClient::validateAndReformProperties(const Properties& properties)
     return newProperties;
 }
 
-inline Optional<std::string>
+inline std::optional<std::string>
 KafkaClient::getProperty(const std::string& name) const
 {
     // Find it in pre-saved properties
@@ -480,7 +473,7 @@ KafkaClient::getProperty(const std::string& name) const
     std::size_t       valueSize = valueBuf.size();
 
     // Try with a default buf size. If could not find the property, return immediately.
-    if (rd_kafka_conf_get(conf, name.c_str(), valueBuf.data(), &valueSize) != RD_KAFKA_CONF_OK) return Optional<std::string>{};
+    if (rd_kafka_conf_get(conf, name.c_str(), valueBuf.data(), &valueSize) != RD_KAFKA_CONF_OK) return std::optional<std::string>{};
 
     // If the default buf size is not big enough, retry with a larger one
     if (valueSize > valueBuf.size())
@@ -496,7 +489,8 @@ KafkaClient::getProperty(const std::string& name) const
 inline void
 KafkaClient::setLogLevel(int level)
 {
-    _logLevel = level < Log::Level::Emerg ? Log::Level::Emerg : (level > Log::Level::Debug ? Log::Level::Debug : level);
+    _logLevel = level < static_cast<int>(Log::Level::Emerg) ?
+                    static_cast<int>(Log::Level::Emerg) : (level > static_cast<int>(Log::Level::Debug) ? static_cast<int>(Log::Level::Debug) : level);
     rd_kafka_set_log_level(getClientHandle(), _logLevel);
 }
 
@@ -662,7 +656,7 @@ KafkaClient::interceptorOnBrokerStateChange(rd_kafka_t* rk, int id, const char* 
     return RD_KAFKA_RESP_ERR_NO_ERROR;
 }
 
-inline Optional<BrokerMetadata>
+inline std::optional<BrokerMetadata>
 KafkaClient::fetchBrokerMetadata(const std::string& topic, std::chrono::milliseconds timeout, bool disableErrorLogging)
 {
     const rd_kafka_metadata_t* rk_metadata = nullptr;
@@ -681,7 +675,7 @@ KafkaClient::fetchBrokerMetadata(const std::string& topic, std::chrono::millisec
         {
             KAFKA_API_DO_LOG(Log::Level::Err, "failed to get BrokerMetadata! error[%s]", rd_kafka_err2str(err));
         }
-        return Optional<BrokerMetadata>{};
+        return std::optional<BrokerMetadata>{};
     }
 
     const rd_kafka_metadata_topic* metadata_topic = nullptr;
@@ -707,7 +701,7 @@ KafkaClient::fetchBrokerMetadata(const std::string& topic, std::chrono::millisec
                 KAFKA_API_DO_LOG(Log::Level::Err, "failed to get BrokerMetadata for topic[%s]! error[%s]", topic.c_str(), rd_kafka_err2str(metadata_topic->err));
             }
         }
-        return Optional<BrokerMetadata>{};
+        return std::optional<BrokerMetadata>{};
     }
 
     // Construct the BrokerMetadata

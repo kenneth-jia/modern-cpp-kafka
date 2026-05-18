@@ -48,7 +48,7 @@ private:
                 "log_cb", "error_cb", "stats_cb", "oauthbearer_token_refresh_cb", "interceptors"
             };
 
-            if ((expectedKey.empty() && std::any_of(nonStringValueKeys.cbegin(), nonStringValueKeys.cend(), [key](const auto& k) { return k == key; }))
+            if ((expectedKey.empty() && std::ranges::any_of(nonStringValueKeys, [key](const auto& k) { return k == key; }))
                || (!expectedKey.empty() && key != expectedKey))
             {
                 throw std::runtime_error("Invalid key/value for configuration: " + key);
@@ -167,9 +167,9 @@ public:
     /**
      * Get a property.
      */
-    Optional<std::string> getProperty(const std::string& key) const
+    std::optional<std::string> getProperty(const std::string& key) const
     {
-        if (!contains(key)) return Optional<std::string>{};
+        if (!contains(key)) return std::optional<std::string>{};
 
         try
         {
@@ -177,7 +177,7 @@ public:
         }
         catch (const std::bad_cast&)
         {
-            return Optional<std::string>{};
+            return std::optional<std::string>{};
         }
     }
 
@@ -193,16 +193,16 @@ public:
     {
 
         std::string ret;
-        std::for_each(_kvMap.cbegin(), _kvMap.cend(),
-                      [&ret](const auto& kv) {
-                          const std::string& key   = kv.first;
-                          const std::string  value = kv.second.toString();
+        std::ranges::for_each(_kvMap,
+                              [&ret](const auto& kv) {
+                                  const std::string& key   = kv.first;
+                                  const std::string  value = kv.second.toString();
 
-                          static const std::regex reSensitiveKey(R"(.+\.password|.+\.username|.+secret|.+key|.+pem)");
-                          const bool isSensitive = std::regex_match(key, reSensitiveKey);
+                                  static const std::regex reSensitiveKey(R"(.+\.password|.+\.username|.+secret|.+key|.+pem)");
+                                  const bool isSensitive = std::regex_match(key, reSensitiveKey);
 
-                          ret.append(ret.empty() ? "" : "|").append(key).append("=").append(isSensitive ? "*" : value);
-                      });
+                                  ret.append(ret.empty() ? "" : "|").append(key).append("=").append(isSensitive ? "*" : value);
+                              });
         return ret;
     }
 

@@ -114,19 +114,19 @@ TEST(KafkaProducer, NoMissedDeliveryCallback)
     std::set<kafka::clients::producer::ProducerRecord::Id> inFlightIds;
 
     auto insertIdInFlight = [&inFlightMutex, &inFlightIds](kafka::clients::producer::ProducerRecord::Id id) {
-        const std::lock_guard<std::mutex> guard(inFlightMutex);
-        ASSERT_EQ(0, inFlightIds.count(id));
+        const std::scoped_lock lock(inFlightMutex);
+        ASSERT_FALSE(inFlightIds.contains(id));
         inFlightIds.insert(id);
     };
 
     auto removeIdInFlight = [&inFlightMutex, &inFlightIds](kafka::clients::producer::ProducerRecord::Id id) {
-        const std::lock_guard<std::mutex> guard(inFlightMutex);
-        ASSERT_EQ(1, inFlightIds.count(id));
+        const std::scoped_lock lock(inFlightMutex);
+        ASSERT_TRUE(inFlightIds.contains(id));
         inFlightIds.erase(id);
     };
 
     auto sizeOfIdsInFlight = [&inFlightMutex, &inFlightIds]() {
-        const std::lock_guard<std::mutex> guard(inFlightMutex);
+        const std::scoped_lock lock(inFlightMutex);
         return inFlightIds.size();
     };
 
@@ -245,8 +245,8 @@ TEST(KafkaProducer, BrokerStopWhileSendingMessages)
     EXPECT_EQ(messages.size(), records.size());
     for (std::size_t i = 0; i < records.size(); ++i)
     {
-        EXPECT_EQ(messages[i].first,  records[i].key().toString());
-        EXPECT_EQ(messages[i].second, records[i].value().toString());
+        EXPECT_EQ(messages.at(i).first,  records.at(i).key().toString());
+        EXPECT_EQ(messages.at(i).second, records.at(i).value().toString());
     }
 }
 
