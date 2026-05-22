@@ -51,8 +51,8 @@ TEST(ConsumerRecord, Basic)
     EXPECT_FALSE(record.error());
     EXPECT_EQ(partition, record.partition());
     EXPECT_EQ(offset, record.offset());
-    EXPECT_EQ(key, std::string(static_cast<const char *>(record.key().data()), record.key().size()));
-    EXPECT_EQ(value, std::string(static_cast<const char *>(record.value().data()), record.value().size()));
+    EXPECT_EQ(key, record.key().toString());
+    EXPECT_EQ(value, record.value().toString());
 }
 
 TEST(ConsumerRecord, WithError)

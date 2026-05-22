@@ -36,7 +36,7 @@ int main()
         messages.pop_front();
 
         // Prepare the message
-        const ProducerRecord record(topic, NullKey, Value(payload->c_str(), payload->size()));
+        const ProducerRecord record(topic, NullKey, Value(*payload));
 
         // Prepare the delivery callback
         // Note: if fails, the message will be pushed back to the sending queue, and then retries later

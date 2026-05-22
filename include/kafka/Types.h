@@ -5,14 +5,17 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <iomanip>
 #include <map>
 #include <memory>
 #include <optional>
 #include <set>
+#include <span>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 
@@ -20,17 +23,24 @@
 
 namespace KAFKA_API {
 
-// Which is similar with `boost::const_buffer` (thus avoid the dependency towards `boost`)
 class ConstBuffer
 {
 public:
-    explicit ConstBuffer(const void* data = nullptr, std::size_t size = 0) noexcept
-        : _data(data), _size(size) {}
-    const void* data()     const { return _data; }
-    std::size_t size()     const { return _size; }
+    explicit ConstBuffer(const std::byte* data = nullptr, std::size_t size = 0) noexcept
+        : _buffer(data, size) {}
+
+    explicit ConstBuffer(std::span<const std::byte> buffer)
+        : _buffer(buffer) {}
+
+    explicit ConstBuffer(std::string_view sv)
+        : _buffer(reinterpret_cast<const std::byte*>(sv.data()), sv.size()) {}      // NOLINT
+
+    constexpr const std::byte*  data() const noexcept { return _buffer.data(); }
+    constexpr std::size_t       size() const noexcept { return _buffer.size(); }
+
     std::string toString() const
     {
-        if (_size == 0) return _data ? "[empty]" : "[null]";
+        if (_buffer.empty()) return _buffer.data() ? "[empty]" : "[null]";
 
         std::ostringstream oss;
 
@@ -41,14 +51,13 @@ public:
                 oss << "[0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(c) << "]";
             }
         };
-        const auto* beg = static_cast<const unsigned char*>(_data);
-        std::for_each(beg, beg + _size, printChar);
+        const auto* beg = reinterpret_cast<const char*>(_buffer.data());            // NOLINT
+        std::for_each(beg, beg + _buffer.size(), printChar);
 
         return oss.str();
     }
 private:
-    const void* _data;
-    std::size_t _size;
+    std::span<const std::byte> _buffer;
 };
 
 

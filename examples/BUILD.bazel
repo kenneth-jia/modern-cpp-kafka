@@ -2,45 +2,105 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 
 cc_binary(
     name = "kafka_sync_producer",
-
     srcs = ["kafka_sync_producer.cc"],
-
     deps = ["//:modern-cpp-kafka-api",
             "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
     name = "kafka_async_producer_copy_payload",
-
     srcs = ["kafka_async_producer_copy_payload.cc"],
-
     deps = ["//:modern-cpp-kafka-api",
             "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
     name = "kafka_async_producer_not_copy_payload",
-
     srcs = ["kafka_async_producer_not_copy_payload.cc"],
-
     deps = ["//:modern-cpp-kafka-api",
             "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
     name = "kafka_auto_commit_consumer",
-
     srcs = ["kafka_auto_commit_consumer.cc"],
-
     deps = ["//:modern-cpp-kafka-api",
             "@librdkafka//:rdkafka"],
 )
 
 cc_binary(
     name = "kafka_manual_commit_consumer",
-
     srcs = ["kafka_manual_commit_consumer.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
 
+cc_binary(
+    name = "example_KafkaProducer_Simple",
+    srcs = ["example_KafkaProducer_Simple.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
+
+cc_binary(
+    name = "example_KafkaProducer_Lifecycle",
+    srcs = ["example_KafkaProducer_Lifecycle.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
+
+cc_binary(
+    name = "example_KafkaProducer_DeepCopy",
+    srcs = ["example_KafkaProducer_DeepCopy.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
+
+cc_binary(
+    name = "example_KafkaProducer_EnableManualEventsPoll",
+    srcs = ["example_KafkaProducer_EnableManualEventsPoll.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
+
+cc_binary(
+    name = "example_KafkaConsumer_Simple",
+    srcs = ["example_KafkaConsumer_Simple.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
+
+cc_binary(
+    name = "example_Properties",
+    srcs = ["example_Properties.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
+
+cc_binary(
+    name = "example_KafkaConsumer_ManualOffsetCommit",
+    srcs = ["example_KafkaConsumer_ManualOffsetCommit.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
+
+cc_binary(
+    name = "example_KafkaClient_Callbacks",
+    srcs = ["example_KafkaClient_Callbacks.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
+
+cc_binary(
+    name = "example_ProducerRecordHeaders",
+    srcs = ["example_ProducerRecordHeaders.cc"],
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
+
+cc_binary(
+    name = "example_KafkaConsumer_RebalanceEvents",
+    srcs = ["example_KafkaConsumer_RebalanceEvents.cc"],
     deps = ["//:modern-cpp-kafka-api",
             "@librdkafka//:rdkafka"],
 )

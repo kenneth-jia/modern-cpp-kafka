@@ -18,7 +18,7 @@ TEST(Transaction, DeliveryFailure)
     KafkaTestUtility::CreateKafkaTopic(topic, 5, 3);
 
     {
-        auto record = kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::Value(messageToSent.c_str(), messageToSent.size()));
+        auto record = kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::Value(messageToSent));
 
         kafka::clients::producer::KafkaProducer producer(KafkaTestUtility::GetKafkaClientCommonConfig()
                                                              .put(kafka::clients::producer::ProducerConfig::MESSAGE_TIMEOUT_MS, "3000")  // The delivery would fail in a short timeout

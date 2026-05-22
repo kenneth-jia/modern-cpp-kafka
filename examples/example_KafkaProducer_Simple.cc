@@ -25,7 +25,7 @@ int main()
     std::string line;
     std::getline(std::cin, line);
 
-    const ProducerRecord record(topic, NullKey, Value(line.c_str(), line.size()));
+    const ProducerRecord record(topic, NullKey, Value(line));
 
     // Prepare delivery callback
     auto deliveryCb = [](const RecordMetadata& metadata, const Error& error) {

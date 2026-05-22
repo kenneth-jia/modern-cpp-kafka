@@ -36,9 +36,7 @@ int main(int argc, char **argv)
              std::getline(std::cin, *line);
              line = std::make_shared<std::string>()) {
             // The ProducerRecord doesn't own `line`, it is just a thin wrapper
-            auto record = ProducerRecord(topic,
-                                         NullKey,
-                                         Value(line->c_str(), line->size()));
+            auto record = ProducerRecord(topic, NullKey, Value(*line));
 
             // Send the message
             producer.send(record,

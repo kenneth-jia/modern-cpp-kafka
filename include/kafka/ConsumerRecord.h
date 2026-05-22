@@ -42,12 +42,12 @@ public:
     /**
      * The key (or null if no key is specified).
      */
-    Key         key()           const { return Key(_rk_msg->key, _rk_msg->key_len); }
+    Key         key()           const { return Key(reinterpret_cast<const std::byte*>(_rk_msg->key), _rk_msg->key_len); }       // NOLINT
 
     /**
      * The value.
      */
-    Value       value()         const { return Value(_rk_msg->payload, _rk_msg->len); }
+    Value       value()         const { return Value(reinterpret_cast<const std::byte*>(_rk_msg->payload), _rk_msg->len); }     // NOLINT
 
     /**
      * The timestamp of the record.
@@ -109,7 +109,7 @@ ConsumerRecord::headers() const
     std::size_t valueSize = 0;
     for (std::size_t i = 0; !rd_kafka_header_get_all(hdrs, i, &name, &valuePtr, &valueSize); i++)
     {
-        headers.emplace_back(name, Header::Value(valuePtr, valueSize));
+        headers.emplace_back(name, Header::Value(reinterpret_cast<const std::byte*>(valuePtr), valueSize));     // NOLINT
     }
 
     return headers;
@@ -127,7 +127,7 @@ ConsumerRecord::lastHeaderValue(const Header::Key& key)
     const void* valuePtr  = nullptr;
     std::size_t valueSize = 0;
     return (rd_kafka_header_get_last(hdrs, key.c_str(), &valuePtr, &valueSize) == RD_KAFKA_RESP_ERR_NO_ERROR) ?
-           Header::Value(valuePtr, valueSize) : Header::Value();
+           Header::Value(reinterpret_cast<const std::byte*>(valuePtr), valueSize) : Header::Value();            // NOLINT
 }
 
 inline std::string

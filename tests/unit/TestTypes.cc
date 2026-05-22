@@ -34,14 +34,14 @@ TEST(Types, TopicPartitionOffsets)
 TEST(Types, ConstBuffer)
 {
     const std::string str = "hello world";
-    const kafka::ConstBuffer strBuf(str.c_str(), str.size());
-    EXPECT_EQ(str.c_str(), strBuf.data());
+    const kafka::ConstBuffer strBuf(str);
+    EXPECT_EQ(str.c_str(), reinterpret_cast<const char*>(strBuf.data()));   // NOLINT
     EXPECT_EQ(str.size(), strBuf.size());
     EXPECT_EQ("hello world", strBuf.toString());
 
     const std::string nonPrintable({'h', 'e', 'l', 'l', 'o', 0, 'w', 'o', 'r', 'l', 'd'});
-    const kafka::ConstBuffer nonPrintableBuf(nonPrintable.data(), nonPrintable.size());
-    EXPECT_EQ(nonPrintable.data(), nonPrintableBuf.data());
+    const kafka::ConstBuffer nonPrintableBuf(reinterpret_cast<const std::byte*>(nonPrintable.data()), nonPrintable.size());     // NOLINT
+    EXPECT_EQ(nonPrintable.data(), reinterpret_cast<const char*>(nonPrintableBuf.data()));                                      // NOLINT
     EXPECT_EQ(nonPrintable.size(), nonPrintableBuf.size());
     EXPECT_EQ("hello[0x00]world", nonPrintableBuf.toString());
 }

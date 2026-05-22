@@ -29,7 +29,7 @@ TEST(Transaction, CommitTransaction)
         producer.beginTransaction();
 
         auto payload = std::make_shared<std::string>(message);
-        auto record  = ProducerRecord(topic, kafka::NullKey, kafka::Value(payload->c_str(), payload->size()));
+        auto record  = ProducerRecord(topic, kafka::NullKey, kafka::Value(*payload));
 
         producer.send(record,
                       [payload](const RecordMetadata& metadata, const kafka::Error& error) {
@@ -261,7 +261,7 @@ TEST(Transaction, ContinueTheTransaction)
 
         producer.beginTransaction();
 
-        auto record = ProducerRecord(topic, kafka::NullKey, kafka::Value(messageToSend.c_str(), messageToSend.size()));
+        auto record = ProducerRecord(topic, kafka::NullKey, kafka::Value(messageToSend));
 
         producer.send(record,
                       [](const RecordMetadata& metadata, const kafka::Error& error) {
@@ -281,7 +281,7 @@ TEST(Transaction, ContinueTheTransaction)
 
         producer.beginTransaction();
 
-        auto record = ProducerRecord(topic, kafka::NullKey, kafka::Value(messageToSend.c_str(), messageToSend.size()));
+        auto record = ProducerRecord(topic, kafka::NullKey, kafka::Value(messageToSend));
 
         producer.send(record,
                       [](const RecordMetadata& metadata, const kafka::Error& error) {
@@ -366,7 +366,7 @@ TEST(Transaction, ContinueTheTransaction2)
             const auto& msg = messagesToSend.at(i);
             auto record = ProducerRecord(topic,
                                          kafka::NullKey,
-                                         kafka::Value(msg.c_str(), msg.size()));
+                                         kafka::Value(msg));
 
             producer.send(record,
                           [&delivered](const RecordMetadata& metadata, const kafka::Error& error) {
@@ -397,7 +397,7 @@ TEST(Transaction, ContinueTheTransaction2)
             const auto& msg = messagesToSend.at(i);
             auto record = ProducerRecord(topic,
                                          kafka::NullKey,
-                                         kafka::Value(msg.c_str(), msg.size()));
+                                         kafka::Value(msg));
 
             producer.send(record,
                           [&delivered](const RecordMetadata& metadata, const kafka::Error& error) {
@@ -440,7 +440,7 @@ TEST(Transaction, ContinueTheTransaction2)
             const auto& msg = messagesToSend.at(i);
             auto record = ProducerRecord(topic,
                                          kafka::NullKey,
-                                         kafka::Value(msg.c_str(), msg.size()));
+                                         kafka::Value(msg));
 
             producer.send(record,
                           [&delivered](const RecordMetadata& metadata, const kafka::Error& error) {

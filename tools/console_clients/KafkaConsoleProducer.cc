@@ -107,7 +107,7 @@ int main (int argc, char **argv)
         while (std::getline(std::cin, line))
         {
             const kafka::Key   key;
-            const kafka::Value value(line.c_str(), line.size());
+            const kafka::Value value(line);
             const auto         topic           = args->topic;
             const auto         partitionOption = args->partition;
 
