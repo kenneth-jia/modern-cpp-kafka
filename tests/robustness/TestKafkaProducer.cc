@@ -50,7 +50,7 @@ TEST(KafkaProducer, RecordTimestamp)
         const auto& topic = topicWithRecordCreateTime;
 
         const std::string payload = "message.timestamp.type=CreateTime";
-        auto record = kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::Value(payload.c_str(), payload.size()));
+        auto record = kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::Value(payload));
 
         std::cout << "[" << kafka::utility::getCurrentTime() << "] Producer is about to send a message to topic [" << topic << "]" << std::endl;
         const kafka::Timestamp::Value tsMsgAboutToSend = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
@@ -81,7 +81,7 @@ TEST(KafkaProducer, RecordTimestamp)
         const auto& topic = topicWithLogAppendTime;
 
         const std::string payload = "message.timestamp.type=LogAppendTime";
-        auto record = kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::Value(payload.c_str(), payload.size()));
+        auto record = kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::Value(payload));
 
         std::cout << "[" << kafka::utility::getCurrentTime() << "] Producer is about to send a message to topic [" << topic << "]" << std::endl;
         const kafka::Timestamp::Value tsMsgAboutToSend = duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
@@ -221,8 +221,8 @@ TEST(KafkaProducer, BrokerStopWhileSendingMessages)
         for (const auto& msg: messages)
         {
             auto record = kafka::clients::producer::ProducerRecord(topic, 0,
-                                                                   kafka::Key(msg.first.c_str(), msg.first.size()),
-                                                                   kafka::Value(msg.second.c_str(), msg.second.size()));
+                                                                   kafka::Key(msg.first),
+                                                                   kafka::Value(msg.second));
 
             producer.send(record, [&deliveryCount]( const kafka::clients::producer::RecordMetadata& metadata, const kafka::Error& error) {
                                       std::cout << "[" << kafka::utility::getCurrentTime() << "] delivery callback: metadata[" << metadata.toString() << "], result[" << error.message() << "]" << std::endl;
@@ -273,8 +273,8 @@ TEST(KafkaProducer, Send_AckTimeout)
         for (const auto& msg: messages)
         {
             auto record = kafka::clients::producer::ProducerRecord(topic,
-                                                                   kafka::Key(msg.first.c_str(), msg.first.size()),
-                                                                   kafka::Value(msg.second.c_str(), msg.second.size()));
+                                                                   kafka::Key(msg.first),
+                                                                   kafka::Value(msg.second));
 
             producer.send(record, [&failureCount](const kafka::clients::producer::RecordMetadata& metadata, const kafka::Error& error) {
                                       std::cout << "[" << kafka::utility::getCurrentTime() << "] delivery callback: result[" << error.message() << "],  metadata[" << metadata.toString() << "]" << std::endl;
@@ -314,8 +314,8 @@ TEST(KafkaProducer, ManuallyPollEvents_AckTimeout)
         for (const auto& msg: messages)
         {
             auto record = kafka::clients::producer::ProducerRecord(topic,
-                                                                   kafka::Key(msg.first.c_str(), msg.first.size()),
-                                                                   kafka::Value(msg.second.c_str(), msg.second.size()));
+                                                                   kafka::Key(msg.first),
+                                                                   kafka::Value(msg.second));
 
             producer.send(record, [&failureCount](const kafka::clients::producer::RecordMetadata& metadata, const kafka::Error& error) {
                                       std::cout << "[" << kafka::utility::getCurrentTime() << "] delivery callback: result[" << error.message() << "],  metadata[" << metadata.toString() << "]" << std::endl;
@@ -363,8 +363,8 @@ TEST(KafkaProducer, ManuallyPollEvents_AlwaysFinishClosing)
         for (const auto& msg: messages)
         {
             auto record = kafka::clients::producer::ProducerRecord(topic,
-                                                                   kafka::Key(msg.first.c_str(), msg.first.size()),
-                                                                   kafka::Value(msg.second.c_str(), msg.second.size()));
+                                                                   kafka::Key(msg.first),
+                                                                   kafka::Value(msg.second));
 
             producer.send(record, [&failureCount, appThreadId](const kafka::clients::producer::RecordMetadata& metadata, const kafka::Error& error) {
                                       std::cout << "[" << kafka::utility::getCurrentTime() << "] delivery callback: result[" << error.message() << "],  metadata[" << metadata.toString() << "]" << std::endl;

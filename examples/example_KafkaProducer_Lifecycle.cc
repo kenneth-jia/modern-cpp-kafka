@@ -32,7 +32,7 @@ int main()
         if (line->empty()) break;
 
         // Prepare a message
-        const ProducerRecord record(topic, NullKey, Value(line->c_str(), line->size()));
+        const ProducerRecord record(topic, NullKey, Value(*line));
 
         // Prepare delivery callback
         // Note: Here we capture the shared pointer of `line`, which holds the content for `record.value()`

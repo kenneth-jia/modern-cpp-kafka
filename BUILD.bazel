@@ -7,6 +7,5 @@ cc_library(
         "include/kafka/addons/*.h",
     ]),
     includes = ["include"],
-    linkopts = ["-lpthread"],
     visibility = ["//visibility:public"],
 )

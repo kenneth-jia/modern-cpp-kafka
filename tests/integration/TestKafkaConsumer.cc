@@ -146,9 +146,9 @@ TEST(KafkaConsumer, PollWithHeaders)
     const std::string v2 = "k2";
     const int         v3 = 134;  // the "value" is an "int" instead of a "string"
     const kafka::Headers headers = {
-        kafka::Header("k1", kafka::Header::Value{v1.c_str(), v1.size()}),
-        kafka::Header("k2", kafka::Header::Value{v2.c_str(), v2.size()}),
-        kafka::Header("k1", kafka::Header::Value{&v3,        sizeof(v3)})     // Note, duplicated "key" in "headers"
+        kafka::Header("k1", kafka::Header::Value{v1}),
+        kafka::Header("k2", kafka::Header::Value{v2}),
+        kafka::Header("k1", kafka::Header::Value{reinterpret_cast<const std::byte*>(&v3), sizeof(v3)})     // Note, duplicated "key" in "headers"   // NOLINT
     };
     const std::vector<std::tuple<kafka::Headers, std::string, std::string>> messages = {
         {headers,   "key1", "value1"},
@@ -1783,8 +1783,8 @@ TEST(KafkaConsumer, RecoverByTime)
         {
             auto record = kafka::clients::producer::ProducerRecord(topic,
                                                                    partition,
-                                                                   kafka::Key(msg.first.c_str(), msg.first.size()),
-                                                                   kafka::Value(msg.second.c_str(), msg.second.size()));
+                                                                   kafka::Key(msg.first),
+                                                                   kafka::Value(msg.second));
             auto metadata = producer.syncSend(record);
 
             std::cout << "[" << kafka::utility::getCurrentTime() << "] Just sent a message: " << record.toString() << ", metadata: " << metadata.toString() << std::endl;

@@ -32,8 +32,8 @@ TEST(KafkaRecoverableProducer, SendMessages)
         for (const auto& msg: messages)
         {
             auto record = kafka::clients::producer::ProducerRecord(topic, partition,
-                                                                   kafka::Key(msg.first.c_str(), msg.first.size()),
-                                                                   kafka::Value(msg.second.c_str(), msg.second.size()),
+                                                                   kafka::Key(msg.first),
+                                                                   kafka::Value(msg.second),
                                                                    id++);
             std::cout << "[" <<kafka::utility::getCurrentTime() << "] ProducerRecord: " << record.toString() << std::endl;
 
@@ -70,8 +70,8 @@ TEST(KafkaRecoverableProducer, SendMessages)
         EXPECT_EQ(messages.size() * 2, records.size());
         for (std::size_t i = 0; i < records.size(); ++i)
         {
-            EXPECT_EQ(messages.at(i/2).first,  std::string(static_cast<const char*>(records.at(i).key().data()), records.at(i).key().size()));
-            EXPECT_EQ(messages.at(i/2).second, std::string(static_cast<const char*>(records.at(i).value().data()), records.at(i).value().size()));
+            EXPECT_EQ(messages.at(i/2).first,  records.at(i).key().toString());
+            EXPECT_EQ(messages.at(i/2).second, records.at(i).value().toString());
         }
     }
 }
@@ -111,7 +111,7 @@ TEST(KafkaRecoverableProducer, MockFatalError)
             const std::shared_ptr<std::string> payload = std::make_shared<std::string>(std::to_string(toSend));
             auto record = kafka::clients::producer::ProducerRecord(topic, partition,
                                                                    kafka::NullKey,
-                                                                   kafka::Value(payload->c_str(), payload->size()),
+                                                                   kafka::Value(*payload),
                                                                    toSend);
 
             std::cout << "[" <<kafka::utility::getCurrentTime() << "] about to send ProducerRecord: " << record.toString() << std::endl;
@@ -156,7 +156,7 @@ TEST(KafkaRecoverableProducer, MockFatalError)
     std::map<kafka::clients::producer::ProducerRecord::Id, int> countMap;
     for (const auto& record: records)
     {
-        const std::string payload(static_cast<const char*>(record.value().data()), record.value().size());
+        const std::string payload = record.value().toString();
         ++countMap[static_cast<kafka::clients::producer::ProducerRecord::Id>(std::stoi(payload))];
     }
 

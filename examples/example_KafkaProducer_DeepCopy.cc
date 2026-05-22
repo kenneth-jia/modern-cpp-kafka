@@ -29,7 +29,7 @@ int main()
         if (line.empty()) break;
 
         // Prepare a message
-        const ProducerRecord record(topic, NullKey, Value(line.c_str(), line.size()));
+        const ProducerRecord record(topic, NullKey, Value(line));
 
         // Prepare delivery callback
         auto deliveryCb = [](const RecordMetadata& metadata, const Error& error) {

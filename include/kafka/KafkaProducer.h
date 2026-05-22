@@ -361,14 +361,14 @@ KafkaProducer::send(const producer::ProducerRecord& record,
     {   // Key
         auto& vu = rkVUs[uvCount++];                    // NOLINT
         vu.vtype      = RD_KAFKA_VTYPE_KEY;
-        vu.u.mem.ptr  = const_cast<void*>(keyPtr);      // NOLINT
+        vu.u.mem.ptr  = const_cast<void*>(reinterpret_cast<const void*>(keyPtr));   // NOLINT
         vu.u.mem.size = keyLen;
     }
 
     {   // Value
         auto& vu = rkVUs[uvCount++];                    // NOLINT
         vu.vtype      = RD_KAFKA_VTYPE_VALUE;
-        vu.u.mem.ptr  = const_cast<void*>(valuePtr);    // NOLINT
+        vu.u.mem.ptr  = const_cast<void*>(reinterpret_cast<const void*>(valuePtr));  // NOLINT
         vu.u.mem.size = valueLen;
     }
 

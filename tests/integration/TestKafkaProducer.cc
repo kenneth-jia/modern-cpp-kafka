@@ -30,7 +30,7 @@ TEST(KafkaProducer, SendMessagesWithAcks1)
     // Send messages
     for (const auto& msg: messages)
     {
-        auto record = kafka::clients::producer::ProducerRecord(topic, partition, kafka::Key(msg.first.c_str(), msg.first.size()), kafka::Value(msg.second.c_str(), msg.second.size()));
+        auto record = kafka::clients::producer::ProducerRecord(topic, partition, kafka::Key(msg.first), kafka::Value(msg.second));
         std::cout << "[" <<kafka::utility::getCurrentTime() << "] ProducerRecord: " << record.toString() << std::endl;
         auto metadata = producer.syncSend(record);
         std::cout << "[" <<kafka::utility::getCurrentTime() << "] kafka::clients::producer::Metadata: " << metadata.toString() << std::endl;
@@ -49,8 +49,8 @@ TEST(KafkaProducer, SendMessagesWithAcks1)
     EXPECT_EQ(messages.size(), records.size());
     for (std::size_t i = 0; i < records.size(); ++i)
     {
-        EXPECT_EQ(messages.at(i).first,  std::string(static_cast<const char*>(records.at(i).key().data()), records.at(i).key().size()));
-        EXPECT_EQ(messages.at(i).second, std::string(static_cast<const char*>(records.at(i).value().data()), records.at(i).value().size()));
+        EXPECT_EQ(messages.at(i).first,  records.at(i).key().toString());
+        EXPECT_EQ(messages.at(i).second, records.at(i).value().toString());
     }
 }
 
@@ -78,8 +78,8 @@ TEST(KafkaProducer, SendMessagesWithAcksAll)
     for (const auto& msg: messages)
     {
         auto record = kafka::clients::producer::ProducerRecord(topic, partition,
-                                                               kafka::Key(msg.first.c_str(), msg.first.size()),
-                                                               kafka::Value(msg.second.c_str(), msg.second.size()));
+                                                               kafka::Key(msg.first),
+                                                               kafka::Value(msg.second));
         std::cout << "[" <<kafka::utility::getCurrentTime() << "] ProducerRecord: " << record.toString() << std::endl;
         auto metadata = producer.syncSend(record);
         std::cout << "[" <<kafka::utility::getCurrentTime() << "] kafka::clients::producer::Metadata: " << metadata.toString() << std::endl;
@@ -98,8 +98,8 @@ TEST(KafkaProducer, SendMessagesWithAcksAll)
     EXPECT_EQ(messages.size(), records.size());
     for (std::size_t i = 0; i < records.size(); ++i)
     {
-        EXPECT_EQ(messages.at(i).first,  std::string(static_cast<const char*>(records.at(i).key().data()), records.at(i).key().size()));
-        EXPECT_EQ(messages.at(i).second, std::string(static_cast<const char*>(records.at(i).value().data()), records.at(i).value().size()));
+        EXPECT_EQ(messages.at(i).first,  records.at(i).key().toString());
+        EXPECT_EQ(messages.at(i).second, records.at(i).value().toString());
     }
 }
 
@@ -135,8 +135,8 @@ TEST(KafkaProducer, DISABLED_FailToSendMessagesWithAcksAll)
     for (const auto& msg: messages)
     {
         auto record = kafka::clients::producer::ProducerRecord(topic,
-                                                               kafka::Key(msg.first.c_str(), msg.first.size()),
-                                                               kafka::Value(msg.second.c_str(), msg.second.size()));
+                                                               kafka::Key(msg.first),
+                                                               kafka::Value(msg.second));
         std::cout << "[" <<kafka::utility::getCurrentTime() << "] ProducerRecord: " << record.toString() << std::endl;
         // Since "no in-sync replica" for the topic, it would keep trying
         EXPECT_KAFKA_THROW(producer.syncSend(record), RD_KAFKA_RESP_ERR__MSG_TIMED_OUT);
@@ -153,8 +153,8 @@ TEST(KafkaProducer, InSyncBrokersAckTimeout)
     const auto key    = std::string(100000, 'a');
     const auto value  = std::string(100000, 'a');
     const auto record = kafka::clients::producer::ProducerRecord(topic, partition,
-                                                                 kafka::Key(key.c_str(), key.size()),
-                                                                 kafka::Value(value.c_str(), value.size()));
+                                                                 kafka::Key(key),
+                                                                 kafka::Value(value));
 
     {
         const auto props = KafkaTestUtility::GetKafkaClientCommonConfig()
@@ -197,8 +197,8 @@ TEST(KafkaProducer, DefaultPartitioner)
         const std::string value = "v" + std::to_string(i);
 
         auto record = kafka::clients::producer::ProducerRecord(topic,
-                                                               kafka::Key(key.c_str(), key.size()),
-                                                               kafka::Value(value.c_str(), value.size()));
+                                                               kafka::Key(key),
+                                                               kafka::Value(value));
 
         auto metadata = producer.syncSend(record);
 
@@ -229,9 +229,7 @@ TEST(KafkaProducer, TryOtherPartitioners)
             const std::string key;
             const std::string value = "v" + std::to_string(i);
 
-            auto record = kafka::clients::producer::ProducerRecord(topic,
-                                                                   kafka::Key(key.c_str(), key.size()),
-                                                                   kafka::Value(value.c_str(), value.size()));
+            auto record = kafka::clients::producer::ProducerRecord(topic, kafka::Key(key), kafka::Value(value));
 
             auto metadata = producer.syncSend(record);
             std::cout << metadata.toString() << std::endl;
@@ -273,7 +271,7 @@ TEST(KafkaProducer, RecordWithEmptyOrNullFields)
         KafkaTestUtility::CreateKafkaTopic(topic, 5, 3);
 
         const std::string emptyStr{};
-        const auto emptyField = kafka::ConstBuffer(emptyStr.c_str(), emptyStr.size());
+        const auto emptyField = kafka::ConstBuffer(emptyStr);
         auto producerRecord = (fieldType == FieldType::Empty ?
                                kafka::clients::producer::ProducerRecord(topic, emptyField, emptyField) : kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::NullValue));
 
@@ -426,8 +424,8 @@ TEST(KafkaProducer, MessageDeliveryCallback)
         for (const auto& msg: messages)
         {
             auto record = kafka::clients::producer::ProducerRecord(topic, partition,
-                                                                   kafka::Key(std::get<0>(msg).c_str(), std::get<0>(msg).size()),
-                                                                   kafka::Value(std::get<1>(msg).c_str(), std::get<1>(msg).size()),
+                                                                   kafka::Key(std::get<0>(msg)),
+                                                                   kafka::Value(std::get<1>(msg)),
                                                                    std::get<2>(msg));
             std::cout << "[" <<kafka::utility::getCurrentTime() << "] ProducerRecord: " << record.toString() << std::endl;
             producer.send(record, drCallback);
@@ -478,8 +476,8 @@ TEST(KafkaProducer, DeliveryCallback_ManuallyPollEvents)
         for (const auto& msg: messages)
         {
             auto record = kafka::clients::producer::ProducerRecord(topic, partition,
-                                                                   kafka::Key(std::get<0>(msg).c_str(), std::get<0>(msg).size()),
-                                                                   kafka::Value(std::get<1>(msg).c_str(), std::get<1>(msg).size()),
+                                                                   kafka::Key(std::get<0>(msg)),
+                                                                   kafka::Value(std::get<1>(msg)),
                                                                    std::get<2>(msg));
             std::cout << "[" <<kafka::utility::getCurrentTime() << "] ProducerRecord: " << record.toString() << std::endl;
             producer.send(record, drCallback);
@@ -537,14 +535,14 @@ TEST(KafkaProducer, NoBlockSendingWhileQueueIsFull_ManuallyPollEvents)
     auto record = kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::NullValue);
 
     // To send the 1st message, should succeed
-    record.setKey(kafka::Key(messages.at(0).first.c_str(), messages.at(0).first.size()));
-    record.setValue(kafka::Value(messages.at(0).second.c_str(), messages.at(0).second.size()));
+    record.setKey(kafka::Key(messages.at(0).first));
+    record.setValue(kafka::Value(messages.at(0).second));
     std::cout << "[" <<kafka::utility::getCurrentTime() << "] About to send ProducerRecord: " << record.toString() << std::endl;
     producer.send(record, drCallback);
 
     // To send the 2nd message, should fail (throw an exception)
-    record.setKey(kafka::Key(messages.at(1).first.c_str(), messages.at(1).first.size()));
-    record.setValue(kafka::Value(messages.at(1).second.c_str(), messages.at(1).second.size()));
+    record.setKey(kafka::Key(messages.at(1).first));
+    record.setValue(kafka::Value(messages.at(1).second));
     EXPECT_KAFKA_THROW(
         {
             std::cout << "[" <<kafka::utility::getCurrentTime() << "] About to send ProducerRecord: " << record.toString() << std::endl;
@@ -554,8 +552,8 @@ TEST(KafkaProducer, NoBlockSendingWhileQueueIsFull_ManuallyPollEvents)
     );
 
     // To send the 3rd message, should fail (return the error code)
-    record.setKey(kafka::Key(messages.at(2).first.c_str(), messages.at(2).first.size()));
-    record.setValue(kafka::Value(messages.at(2).second.c_str(), messages.at(2).second.size()));
+    record.setKey(kafka::Key(messages.at(2).first));
+    record.setValue(kafka::Value(messages.at(2).second));
     kafka::Error error;
     std::cout << "[" <<kafka::utility::getCurrentTime() << "] About to send ProducerRecord: " << record.toString() << std::endl;
     producer.send(record, drCallback, error);
@@ -584,7 +582,7 @@ TEST(KafkaProducer, TooLargeMessageForBroker)
     KafkaTestUtility::CreateKafkaTopic(topic, 5, 3);
 
     const auto value  = std::string(2048, 'a');
-    const auto record = kafka::clients::producer::ProducerRecord(topic, partition, kafka::NullKey, kafka::Value(value.c_str(), value.size()));
+    const auto record = kafka::clients::producer::ProducerRecord(topic, partition, kafka::NullKey, kafka::Value(value));
 
     const auto props = KafkaTestUtility::GetKafkaClientCommonConfig()
                        .put(kafka::clients::producer::ProducerConfig::BATCH_SIZE,        "2000000")
@@ -627,7 +625,7 @@ TEST(KafkaProducer, CopyRecordValueWithinSend)
         for (std::size_t i = 0; i < MSG_NUM; ++i)
         {
             auto value  = std::to_string(i); // The payload is string for integar
-            auto record = kafka::clients::producer::ProducerRecord(topic, kafka::Key(nullptr, 0), kafka::Value(value.c_str(), value.size()));
+            auto record = kafka::clients::producer::ProducerRecord(topic, kafka::Key(nullptr, 0), kafka::Value(value));
             producer.send(record,
                           [] (const kafka::clients::producer::RecordMetadata& /*metadata*/, const kafka::Error& error) { EXPECT_FALSE(error); },
                           kafka::clients::producer::KafkaProducer::SendOption::ToCopyRecordValue); // Copy the payload internally

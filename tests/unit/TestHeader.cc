@@ -15,10 +15,10 @@ TEST(Header, Basic)
     EXPECT_EQ("[null]:[null]", defaultHeader.toString());
 
     const std::string v = "v";
-    const kafka::Header header("k", kafka::Header::Value{v.c_str(), v.size()});
+    const kafka::Header header("k", kafka::Header::Value{v});
 
     EXPECT_EQ("k", header.key);
-    EXPECT_EQ(v.c_str(), header.value.data());
+    EXPECT_EQ(static_cast<const void*>(v.c_str()), static_cast<const void*>(header.value.data()));
     EXPECT_EQ(v.size(), header.value.size());
     EXPECT_EQ("k:v", header.toString());
 }
@@ -33,7 +33,7 @@ TEST(Header, Headers)
     };
 
     kafka::Headers headers;
-    std::ranges::for_each(kvs, [&headers](const auto& kv) { headers.emplace_back(kv.first, kafka::Header::Value(kv.second.c_str(), kv.second.size())); });
+    std::ranges::for_each(kvs, [&headers](const auto& kv) { headers.emplace_back(kv.first, kafka::Header::Value(kv.second)); });
 
     EXPECT_EQ("k1:v1,k2:v2,k3:v3", kafka::toString(headers));
 }

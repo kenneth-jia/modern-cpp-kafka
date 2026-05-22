@@ -183,7 +183,7 @@ ProduceMessages(const std::string& topic, int partition, const std::vector<std::
     std::vector<kafka::clients::producer::RecordMetadata> ret;
     for (const auto& msg: msgs)
     {
-        auto record = kafka::clients::producer::ProducerRecord(topic, partition, kafka::Key(std::get<1>(msg).c_str(), std::get<1>(msg).size()), kafka::Value(std::get<2>(msg).c_str(), std::get<2>(msg).size()));
+        auto record = kafka::clients::producer::ProducerRecord(topic, partition, kafka::Key(std::get<1>(msg)), kafka::Value(std::get<2>(msg)));
         record.headers() = std::get<0>(msg);
         auto metadata = producer.syncSend(record);
         ret.emplace_back(metadata);
