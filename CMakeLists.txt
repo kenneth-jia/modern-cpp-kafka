@@ -28,7 +28,7 @@ include(CMakePushCheckState)
 if (NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 23)
 endif ()
-set(CMAKE_CXX_STANDARD_REQUIRED False)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
 #---------------------------

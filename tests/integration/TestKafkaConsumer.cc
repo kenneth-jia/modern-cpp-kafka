@@ -148,7 +148,7 @@ TEST(KafkaConsumer, PollWithHeaders)
     const kafka::Headers headers = {
         kafka::Header("k1", kafka::Header::Value{v1}),
         kafka::Header("k2", kafka::Header::Value{v2}),
-        kafka::Header("k1", kafka::Header::Value{reinterpret_cast<const std::byte*>(&v3), sizeof(v3)})     // Note, duplicated "key" in "headers"   // NOLINT
+        kafka::Header("k1", kafka::Header::Value{v3})     // Note, duplicated "key" in "headers"
     };
     const std::vector<std::tuple<kafka::Headers, std::string, std::string>> messages = {
         {headers,   "key1", "value1"},

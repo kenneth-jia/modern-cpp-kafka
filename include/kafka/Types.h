@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <iomanip>
@@ -16,12 +17,20 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 
 
 
 namespace KAFKA_API {
+
+template <typename T>
+concept PlainMemoryObject =
+    std::is_trivial<T>::value &&
+    std::is_standard_layout<T>::value &&
+    !std::is_pointer<T>::value &&
+    !std::is_reference<T>::value;
 
 class ConstBuffer
 {
@@ -34,6 +43,15 @@ public:
 
     explicit ConstBuffer(std::string_view sv)
         : _buffer(reinterpret_cast<const std::byte*>(sv.data()), sv.size()) {}      // NOLINT
+
+    ConstBuffer(std::string&&) = delete;
+
+    template <PlainMemoryObject T>
+    explicit ConstBuffer(const T& t) noexcept
+        : ConstBuffer(reinterpret_cast<const std::byte*>(&t), sizeof(T)) {}         // NOLINT
+
+    template <PlainMemoryObject T>
+    ConstBuffer(const T&&) = delete;
 
     constexpr const std::byte*  data() const noexcept { return _buffer.data(); }
     constexpr std::size_t       size() const noexcept { return _buffer.size(); }
