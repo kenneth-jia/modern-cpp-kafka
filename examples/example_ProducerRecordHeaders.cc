@@ -21,7 +21,7 @@ int main()
         kafka::clients::producer::ProducerRecord record(topic, partition, kafka::Key{key}, kafka::Value{value});
         record.headers() = {{
             kafka::Header{kafka::Header::Key{"Category"},  kafka::Header::Value{category}},
-            kafka::Header{kafka::Header::Key{"SessionId"}, kafka::Header::Value{reinterpret_cast<const std::byte*>(&sessionId), sizeof(sessionId)}}     // NOLINT
+            kafka::Header{kafka::Header::Key{"SessionId"}, kafka::Header::Value{sessionId}}
         }};
 
         std::cout << "ProducerRecord: " << record.toString() << std::endl;

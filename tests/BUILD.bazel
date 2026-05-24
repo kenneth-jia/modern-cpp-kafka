@@ -5,7 +5,7 @@ cc_test(
 
     srcs = glob(["unit/*.cc", "utils/*.h"]),
 
-    copts = ["-std=c++23"],
+    copts = ["-std=c++23", "-isystemexternal/+http_archive+gtest/googletest/include"],
 
     deps = ["//:modern-cpp-kafka-api",
             "@gtest//:gtest",
@@ -24,7 +24,7 @@ cc_test(
 
     srcs = glob(["integration/*.cc", "utils/*.h"]),
 
-    copts = ["-std=c++23"],
+    copts = ["-std=c++23", "-isystemexternal/+http_archive+gtest/googletest/include"],
 
     deps = ["//:modern-cpp-kafka-api",
             "@gtest//:gtest",
@@ -42,7 +42,7 @@ cc_test(
 
     srcs = glob(["robustness/*.cc", "utils/*.h"]),
 
-    copts = ["-std=c++23"],
+    copts = ["-std=c++23", "-isystemexternal/+http_archive+gtest/googletest/include"],
 
     deps = ["//:modern-cpp-kafka-api",
             "@gtest//:gtest",

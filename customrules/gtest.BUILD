@@ -21,7 +21,7 @@ cc_library(
         "googletest/include/gtest/*.h",
         "googlemock/include/gmock/*.h",
     ]),
-    copts = ["-pthread"],
+    copts = ["-isystemexternal/+http_archive+gtest/googletest/include"],
     includes = [
         "googlemock",
         "googlemock/include",
@@ -36,5 +36,6 @@ cc_library(
     name = "gtest_main",
     srcs = ["googlemock/src/gmock_main.cc"],
     deps = [":gtest"],
+    copts = ["-isystemexternal/+http_archive+gtest/googletest/include"],
     visibility = ["//visibility:public"],
 )
