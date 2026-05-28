@@ -26,3 +26,12 @@ cc_binary(
     deps = ["//:modern-cpp-kafka-api",
             "@librdkafka//:rdkafka"],
 )
+
+cc_binary(
+    name = "kafka-perf-benchmark",
+
+    srcs = ["KafkaPerfBenchmark.cc"],
+
+    deps = ["//:modern-cpp-kafka-api",
+            "@librdkafka//:rdkafka"],
+)
