@@ -26,3 +26,13 @@ add_executable("${KafkaConsoleProducer}" "KafkaConsoleProducer.cc")
 target_link_libraries("${KafkaConsoleProducer}" modern-cpp-kafka-api)
 
 install(TARGETS "${KafkaConsoleProducer}" DESTINATION tools)
+
+
+# Target: kafka-producer-perf-test
+set(KafkaProducerPerfTest kafka-producer-perf-test)
+
+add_executable("${KafkaProducerPerfTest}" "KafkaProducerPerfTest.cc")
+target_link_libraries("${KafkaProducerPerfTest}" modern-cpp-kafka-api)
+
+install(TARGETS "${KafkaProducerPerfTest}" DESTINATION tools)
+
