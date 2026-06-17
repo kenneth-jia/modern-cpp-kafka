@@ -271,11 +271,11 @@ TEST(KafkaProducer, RecordWithEmptyOrNullFields)
         KafkaTestUtility::CreateKafkaTopic(topic, 5, 3);
 
         const std::string emptyStr{};
-        const auto emptyField = kafka::ConstBuffer(emptyStr);
+        const auto emptyField = kafka::Key(emptyStr);
         auto producerRecord = (fieldType == FieldType::Empty ?
                                kafka::clients::producer::ProducerRecord(topic, emptyField, emptyField) : kafka::clients::producer::ProducerRecord(topic, kafka::NullKey, kafka::NullValue));
 
-        sendMessages(producerRecord, 10, partitioner);
+        sendMessages(producerRecord, 20, partitioner);
 
         // The auto-commit consumer
         kafka::clients::consumer::KafkaConsumer consumer(KafkaTestUtility::GetKafkaClientCommonConfig()

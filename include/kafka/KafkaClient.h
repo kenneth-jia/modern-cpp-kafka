@@ -221,64 +221,35 @@ protected:
         const Callback _cb;
     };
 
-    class PollThread
-    {
-    public:
-        using InterceptorCb = std::function<void()>;
-        explicit PollThread(const InterceptorCb& entryCb, const InterceptorCb& exitCb, Pollable& pollable)
-            : _running(true), _thread(keepPolling, std::ref(_running), entryCb, exitCb, std::ref(pollable))
-        {
-        }
-
-        ~PollThread()
-        {
-            _running = false;
-
-            if (_thread.joinable()) _thread.join();
-        }
-
-    private:
-        static void keepPolling(std::atomic_bool&       running,
-                                const InterceptorCb&    entryCb,
-                                const InterceptorCb&    exitCb,
-                                Pollable&               pollable)
-        {
-            entryCb();
-
-            while (running.load())
-            {
-                pollable.poll(CALLBACK_POLLING_INTERVAL_MS);
-            }
-
-            exitCb();
-        }
-
-        static constexpr int CALLBACK_POLLING_INTERVAL_MS = 10;
-
-        std::atomic_bool _running;
-        std::thread      _thread;
-    };
-
     void startBackgroundPollingIfNecessary(const PollableCallback::Callback& pollableCallback)
     {
         _pollable = std::make_unique<KafkaClient::PollableCallback>(pollableCallback);
 
-        auto entryCb = [this]() { interceptThreadStart("events-polling", "background"); };
-        auto exitCb =  [this]() { interceptThreadExit("events-polling", "background"); };
+        if (isWithAutoEventsPolling())
+        { 
+            static constexpr int CALLBACK_POLLING_INTERVAL_MS = 10;
+            _pollThread = std::make_unique<std::jthread>([this](const std::stop_token& stopToken){
+                interceptThreadStart("events-polling", "background");
 
-        if (isWithAutoEventsPolling()) _pollThread = std::make_unique<PollThread>(entryCb, exitCb, *_pollable);
+                while (!stopToken.stop_requested())
+                {
+                    _pollable->poll(CALLBACK_POLLING_INTERVAL_MS);
+                }
+
+                interceptThreadExit("events-polling", "background");
+            });
+        }
     }
 
     void stopBackgroundPollingIfNecessary()
     {
-        _pollThread.reset(); // Join the polling thread (in case it's running)
-
+        _pollThread.reset();
         _pollable.reset();
     }
 
 private:
     std::unique_ptr<Pollable>   _pollable;
-    std::unique_ptr<PollThread> _pollThread;
+    std::unique_ptr<std::jthread> _pollThread;
 };
 
 

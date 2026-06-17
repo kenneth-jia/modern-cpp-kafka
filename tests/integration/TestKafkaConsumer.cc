@@ -1604,7 +1604,7 @@ TEST(KafkaConsumer, PauseStillWorksAfterRebalance)
     const auto groupIdOption = consumer1.getProperty(kafka::clients::consumer::ConsumerConfig::GROUP_ID);
     ASSERT_TRUE(groupIdOption);
     const auto props2 = props1.put(kafka::clients::consumer::ConsumerConfig::GROUP_ID, *groupIdOption);     // NOLINT
-    const KafkaTestUtility::JoiningThread consumer2Thread(
+    std::jthread consumer2Thread(                                                                           // NOLINT(misc-const-correctness)
         [props2, topic1, topic2, &p]() {
             kafka::clients::consumer::KafkaConsumer consumer2(props2);
             consumer2.subscribe({topic1, topic2});
@@ -1912,7 +1912,7 @@ TEST(KafkaConsumer, CreateTopicAfterSubscribe)
                                                              }));
 
     // The topic would be created after 5 seconds
-    const KafkaTestUtility::JoiningThread consumer1Thread(createTopicAfterSeconds, 5);
+    const std::jthread consumer1Thread(createTopicAfterSeconds, 5);
 
     std::cout << "[" << kafka::utility::getCurrentTime() << "] Consumer will subscribe" << std::endl;
     EXPECT_KAFKA_NO_THROW(consumer.subscribe({topic}));
@@ -1966,19 +1966,19 @@ TEST(KafkaConsumer, CooperativeRebalance)
         KafkaTestUtility::PrintDividingLine(clientId + " is quitting");
     };
 
-    const KafkaTestUtility::JoiningThread consumer1Thread(startConsumer, "consumer1", 10);
+    std::jthread consumer1Thread(startConsumer, "consumer1", 10); // NOLINT(misc-const-correctness)
 
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    const KafkaTestUtility::JoiningThread consumer2Thread(startConsumer, "consumer2", 10);
+    std::jthread consumer2Thread(startConsumer, "consumer2", 10); // NOLINT(misc-const-correctness)
 
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    const KafkaTestUtility::JoiningThread consumer3Thread(startConsumer, "consumer3", 10);
+    std::jthread consumer3Thread(startConsumer, "consumer3", 10); // NOLINT(misc-const-correctness)
 
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    const KafkaTestUtility::JoiningThread consumer4Thread(startConsumer, "consumer4", 10);
+    std::jthread consumer4Thread(startConsumer, "consumer4", 10); // NOLINT(misc-const-correctness)
 }
 
 TEST(KafkaConsumer, FetchBrokerMetadataTriggersRejoin)
