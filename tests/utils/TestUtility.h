@@ -13,6 +13,7 @@
 #include <ranges>
 #include <regex>
 #include <signal.h>
+#include <thread>
 #include <vector>
 
 
@@ -204,15 +205,6 @@ CreateKafkaTopic(const kafka::Topic& topic, int numPartitions, int replicationFa
     std::this_thread::sleep_for(std::chrono::seconds(5));
 }
 
-class JoiningThread {
-public:
-    template <typename F, typename... Args>
-    explicit JoiningThread(F&& f, Args&&... args): _t(std::forward<F>(f), std::forward<Args>(args)...) {}
-    ~JoiningThread() { if (_t.joinable()) _t.join(); }
-private:
-   std::thread _t;
-};
-
 inline void
 WaitMetadataSyncUpBetweenBrokers()
 {
@@ -275,13 +267,12 @@ ResumeBrokers()
     std::this_thread::sleep_for(std::chrono::seconds(WAIT_AFTER_RESUME_SEC));
 }
 
-inline std::shared_ptr<JoiningThread>
+inline std::unique_ptr<std::jthread>
 PauseBrokersForAWhile(std::chrono::milliseconds duration)
 {
     PauseBrokers();
 
-    auto cb = [](std::chrono::milliseconds ms){ std::this_thread::sleep_for(ms); ResumeBrokers(); };
-    return std::make_shared<JoiningThread>(cb, duration);
+    return std::make_unique<std::jthread>([duration](){ std::this_thread::sleep_for(duration); ResumeBrokers(); });
 }
 
 } // end of namespace KafkaTestUtility

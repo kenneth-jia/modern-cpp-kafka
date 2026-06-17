@@ -16,19 +16,38 @@ class KafkaRecoverableProducer
 {
 public:
     explicit KafkaRecoverableProducer(const Properties& properties)
-        : _properties(properties), _running(true)
+        : _properties(properties)
     {
         _properties.put(Config::ENABLE_MANUAL_EVENTS_POLL, "true");
         _properties.put(Config::ERROR_CB, [this](const Error& error) { if (error.isFatal()) _fatalError = std::make_unique<Error>(error); });
 
         _producer = createProducer();
 
-        _pollThread = std::thread([this]() { keepPolling(); });
+        _pollThread = std::make_unique<std::jthread>([this](const std::stop_token& stopToken) { 
+            while (!stopToken.stop_requested()) {
+                _producer->pollEvents(std::chrono::milliseconds(1));
+
+                if (_fatalError) {
+                    const std::string errStr = _fatalError->toString();
+                    KAFKA_API_LOG(Log::Level::Notice, "met fatal error[%s], will re-initialize the internal producer", errStr.c_str());
+
+                    _producer->purge();
+
+                    if (stopToken.stop_requested()) return;
+
+                    _fatalError.reset();
+
+                    const std::scoped_lock lock(_producerMutex);
+                    _producer->close();
+                    _producer = createProducer();
+                }
+            }
+        });
     }
 
     ~KafkaRecoverableProducer()
     {
-        if (_running) close();
+        if (_producer) close();
     }
 
     /**
@@ -125,12 +144,13 @@ public:
      */
     void close(std::chrono::milliseconds timeout = InfiniteTimeout)
     {
+        if (!_producer) return;
+    
+        _pollThread.reset();
+
         const std::scoped_lock lock(_producerMutex);
-
-        _running = false;
-        if (_pollThread.joinable()) _pollThread.join();
-
         _producer->close(timeout);
+        _producer.reset();
     }
 
     /**
@@ -269,30 +289,6 @@ public:
 #endif
 
 private:
-    void keepPolling()
-    {
-        while (_running)
-        {
-            _producer->pollEvents(std::chrono::milliseconds(1));
-            if (_fatalError)
-            {
-                const std::string errStr = _fatalError->toString();
-                KAFKA_API_LOG(Log::Level::Notice, "met fatal error[%s], will re-initialize the internal producer", errStr.c_str());
-
-                const std::scoped_lock lock(_producerMutex);
-
-                if (!_running) return;
-
-                _producer->purge();
-                _producer->close();
-
-                _fatalError.reset();
-
-                _producer = createProducer();
-            }
-        }
-    }
-
     std::unique_ptr<KafkaProducer> createProducer()
     {
         return std::make_unique<KafkaProducer>(_properties);
@@ -303,8 +299,7 @@ private:
 
     std::unique_ptr<Error> _fatalError;
 
-    std::atomic<bool> _running;
-    std::thread       _pollThread;
+    std::unique_ptr<std::jthread>  _pollThread;
 
     mutable std::mutex             _producerMutex;
     std::unique_ptr<KafkaProducer> _producer;
