@@ -36,3 +36,11 @@ target_link_libraries("${KafkaProducerPerfTest}" modern-cpp-kafka-api)
 
 install(TARGETS "${KafkaProducerPerfTest}" DESTINATION tools)
 
+
+# Target: kafka-consumer-perf-test
+set(KafkaConsumerPerfTest kafka-consumer-perf-test)
+
+add_executable("${KafkaConsumerPerfTest}" "KafkaConsumerPerfTest.cc")
+target_link_libraries("${KafkaConsumerPerfTest}" modern-cpp-kafka-api)
+
+install(TARGETS "${KafkaConsumerPerfTest}" DESTINATION tools)
