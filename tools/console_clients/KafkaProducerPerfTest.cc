@@ -32,16 +32,16 @@ struct Arguments
         std::cout << "    (with librdkafka v" << utility::getLibRdKafkaVersion() << ")" << std::endl;
         std::cout << std::endl;
         std::cout << "Options:" << std::endl;
-        std::cout << "  -h, --help                          Show the help message and exit" << std::endl;
-        std::cout << "  --bootstrap-server BOOTSTRAP-SERVER The server(s) to connect to." << std::endl;
-        std::cout << "  --topic TOPIC                       Produce records to this topic." << std::endl;
-        std::cout << "  --num-records NUM-RECORDS           Number of records to produce." << std::endl;
-        std::cout << "  --throughput THROUGHPUT             Throttle maximum record throughput to *approximately* THROUGHPUT records/sec. (default: no throlling)" << std::endl;
-        std::cout << "  --command-property PROP-NAME=PROP-VALUE[ PROP-NAME=PROP-VALUE...]" << std::endl;
-        std::cout << "                                      Kafka producer related configuration properties." << std::endl;
-        std::cout << "  --warmup-records WARMUP-RECORDS     The number of records to treat as warmup. (default: 0)" << std::endl;
-        std::cout << "  --reporting-interval INTERVAL-MS    Interval in milliseconds at which to print progress info. (default: 5000)" << std::endl;
-        std::cout << "  --record-size RECORD-SIZE           Record size in bytes." << std::endl;
+        std::cout << "  -h, --help                                      Show the help message and exit" << std::endl;
+        std::cout << "  --bootstrap-server <BOOTSTRAP-SERVER>           REQUIRED: The server(s) to connect to." << std::endl;
+        std::cout << "  --topic <TOPIC>                                 REQUIRED: Produce records to this topic." << std::endl;
+        std::cout << "  --num-records <NUM-RECORDS>                     REQUIRED: Number of records to produce." << std::endl;
+        std::cout << "  --record-size <RECORD-SIZE>                     REQUIRED: Record size in bytes." << std::endl;   
+        std::cout << "  --throughput <THROUGHPUT>                       Throttle maximum record throughput to *approximately* THROUGHPUT records/sec. (default: no throlling)" << std::endl;
+        std::cout << "  --command-property <prop1=val1 prop2=val2 ...>  Kafka consumer related configuration properties" << std::endl;
+        std::cout << "                                                  Kafka producer related configuration properties." << std::endl;
+        std::cout << "  --warmup-records <WARMUP-RECORDS>               The number of records to treat as warmup. (default: 0)" << std::endl;
+        std::cout << "  --reporting-interval <INTERVAL-MS>              Interval in milliseconds at which to print progress info. (default: 5000)" << std::endl;
     }
 
     std::string                         brokerList;
